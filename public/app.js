@@ -641,7 +641,6 @@ async function setupPush() {
 
 // ---------- router ----------
 async function route() {
-  document.activeElement?.blur() // keyboard tutup di setiap pindah layar
   const h = location.hash || '#/'
   try {
     if (h === '#/login') return vLogin()
@@ -661,7 +660,10 @@ async function route() {
     location.hash = '#/'
   } catch (err) { toast(err.message, true) }
 }
-window.addEventListener('hashchange', route)
+window.addEventListener('hashchange', () => {
+  document.activeElement?.blur() // keyboard tutup di setiap pindah layar (bukan saat boot/render awal)
+  route()
+})
 // layout switch HANYA saat lewat breakpoint 768px — bukan tiap resize:
 // keyboard HP kebuka = viewport ngecil = resize palsu -> route() render ulang -> input hancur -> keyboard nutup sendiri
 matchMedia('(min-width: 768px)').addEventListener('change', route)
