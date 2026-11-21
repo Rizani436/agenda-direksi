@@ -43,7 +43,13 @@ app.use('/api/users', users)
 app.use('/api/notifikasi', notif)
 app.use('/api/agenda', agenda)
 
-app.use(express.static(path.join(__dirname, 'public')))
+app.use(express.static(path.join(__dirname, 'public'), {
+  setHeaders: (res, p) => {
+    // html/js/css wajib revalidate (etag 304) — cache lama bikin update JS nggak sampai ke user
+    if (/\.(html|js|css|json|svg)$/.test(p)) res.setHeader('Cache-Control', 'no-cache')
+    else res.setHeader('Cache-Control', 'public, max-age=604800') // ikon/font boleh lama
+  },
+}))
 app.get(/^\/(?!api\/).*/, (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')))
 
 // error handler: pesan DB/validasi jangan bocor mentah

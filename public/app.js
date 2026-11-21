@@ -573,6 +573,7 @@ document.addEventListener('submit', async (e) => {
   const f = e.target.closest('form[data-form]')
   if (!f) return
   e.preventDefault()
+  window.Capacitor?.Plugins?.Keyboard?.hide?.() // APK: WebView kadang bandel walau sudah blur
   document.activeElement?.blur() // tutup soft keyboard (SPA rerender tanpa blur = keyboard numpuk)
   const kind = f.dataset.form
   try {
@@ -637,6 +638,7 @@ async function setupPush() {
 
 // ---------- router ----------
 async function route() {
+  document.activeElement?.blur() // keyboard tutup di setiap pindah layar
   const h = location.hash || '#/'
   try {
     if (h === '#/login') return vLogin()

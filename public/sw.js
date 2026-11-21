@@ -10,8 +10,9 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url)
   if (url.pathname.startsWith('/api/') || e.request.method !== 'GET') return // API selalu network
   // network-first: kode terbaru selalu menang; cache hanya fallback offline
+  // cache:'reload' = lewati HTTP cache browser (max-age lama bikin update JS nggak sampai)
   e.respondWith(
-    fetch(e.request).then((res) => {
+    fetch(e.request, { cache: 'reload' }).then((res) => {
       const cp = res.clone()
       caches.open('agenda-v2').then((c) => c.put(e.request, cp))
       return res
