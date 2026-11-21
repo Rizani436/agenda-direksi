@@ -157,6 +157,16 @@ r.post('/:id/paksa', mustLogin, sekperOnly, async (req, res) => {
   res.json({ ok: true })
 })
 
+// ---- kirim notif manual ke semua peserta agenda (sekper) ----
+r.post('/:id/notif', mustLogin, sekperOnly, async (req, res) => {
+  const a = await loadAgenda(req.params.id)
+  if (!a) return res.status(404).json({ error: 'agenda tidak ditemukan' })
+  if (a.status !== 'aktif') return res.status(400).json({ error: 'hanya agenda aktif' })
+  const [rows] = await q('SELECT DISTINCT user_id FROM peserta_agenda WHERE agenda_id=?', [a.id])
+  for (const r of rows) await kirimNotif(r.user_id, a.id, 'pengingat')
+  res.json({ ok: true, n: rows.length })
+})
+
 // ---- aksi responder (pada node sendiri yang masih menunggu) ----
 async function myRow(req, res) {
   const [[p]] = await q(`SELECT p.* FROM peserta_agenda p JOIN agenda a ON a.id=p.agenda_id

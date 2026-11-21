@@ -62,7 +62,7 @@ CREATE TABLE notifikasi (
   id        INT AUTO_INCREMENT PRIMARY KEY,
   user_id   INT NOT NULL,
   agenda_id INT NOT NULL,
-  tipe      ENUM('agenda_baru','alihan','h1','h','paksa','ditolak') NOT NULL,
+  tipe      ENUM('agenda_baru','alihan','h1','h','paksa','ditolak','pengingat') NOT NULL,
   dibaca    BOOLEAN DEFAULT FALSE,
   waktu     DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id)   REFERENCES users(id),

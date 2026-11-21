@@ -221,6 +221,7 @@ async function vDetail(id) {
       <div style="display:flex;gap:12px">
         ${a.status === 'draft' ? `<button class="btn" data-act="kirim" data-id="${a.id}">${svg('send', 16)}Kirim Agenda</button>` : ''}
         <button class="btn outline" data-nav="#/agenda/${a.id}/edit">Edit Agenda</button>
+        ${a.status === 'aktif' ? `<button class="btn outline" data-act="kirim-notif" data-id="${a.id}">${svg('bell', 16)}Kirim Notif</button>` : ''}
         ${a.status === 'aktif' ? `<button class="btn outline danger-o" data-act="batal" data-id="${a.id}">Batalkan</button>` : ''}
         ${a.status === 'aktif' && !pg ? `<button class="btn" data-act="paksa" data-id="${a.id}">Paksa Titik</button>` : ''}
       </div></div>`
@@ -284,6 +285,7 @@ async function vDetail(id) {
   const ctaSekperMobile = !isDesk() && sekper ? `
     <div style="display:flex;gap:12px;margin-top:16px">
       ${a.status === 'draft' ? `<button class="btn" style="flex:1" data-act="kirim" data-id="${a.id}">Kirim Agenda</button>` : ''}
+      ${a.status === 'aktif' ? `<button class="btn outline" style="flex:1" data-act="kirim-notif" data-id="${a.id}">${svg('bell', 16)}Kirim Notif</button>` : ''}
       ${a.status === 'aktif' ? `<button class="btn outline danger-o" style="flex:1" data-act="batal" data-id="${a.id}">Batalkan</button>` : ''}
       ${a.status === 'aktif' && !pg ? `<button class="btn" style="flex:1" data-act="paksa" data-id="${a.id}">Paksa Titik</button>` : ''}
     </div>` : ''
@@ -516,6 +518,10 @@ document.addEventListener('click', async (e) => {
     } else if (act === 'alih') location.hash = `#/agenda/peserta/${id}/alih`
     else if (act === 'tolak') modalTolak(id)
     else if (act === 'paksa') modalPaksa(id)
+    else if (act === 'kirim-notif') {
+      const r = await api(`/agenda/${id}/notif`, { method: 'POST' })
+      toast(`Notif terkirim ke ${r.n} peserta`)
+    }
     else if (act === 'kirim') {
       const d = await api('/agenda/' + id)
       if (!d.chain.length) return toast('Pilih peserta dulu lewat Edit Agenda', true)
