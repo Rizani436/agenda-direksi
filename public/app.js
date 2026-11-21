@@ -573,6 +573,7 @@ document.addEventListener('submit', async (e) => {
   const f = e.target.closest('form[data-form]')
   if (!f) return
   e.preventDefault()
+  document.activeElement?.blur() // tutup soft keyboard (SPA rerender tanpa blur = keyboard numpuk)
   const kind = f.dataset.form
   try {
     if (kind === 'login') {
