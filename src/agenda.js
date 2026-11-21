@@ -58,7 +58,8 @@ r.get('/', mustLogin, async (req, res) => {
   let sql = `SELECT a.id,a.judul,a.tanggal,a.jam,a.lokasi,a.status,a.catatan,u.nama AS pembuat,
     (SELECT p.status FROM peserta_agenda p WHERE p.agenda_id=a.id AND p.user_id=? ORDER BY p.id DESC LIMIT 1) AS status_saya,
     (SELECT pu.nama FROM peserta_agenda p JOIN users pu ON pu.id=p.user_id
-      WHERE p.agenda_id=a.id AND p.status='menunggu' ORDER BY p.id DESC LIMIT 1) AS pemegang
+      WHERE p.agenda_id=a.id AND p.status='menunggu' ORDER BY p.id DESC LIMIT 1) AS pemegang,
+    (SELECT COUNT(*) FROM peserta_agenda p WHERE p.agenda_id=a.id AND p.status='tidak_hadir') AS n_alih
     FROM agenda a JOIN users u ON u.id=a.dibuat_oleh WHERE ${where}`
   if (term) { sql += ' AND a.judul LIKE ?'; params.push('%' + term + '%') }
   sql += ' ORDER BY a.tanggal DESC, a.jam DESC'

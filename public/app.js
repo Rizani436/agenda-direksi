@@ -1,4 +1,4 @@
-/* Agenda Direksi — SPA vanilla, no build step */
+/* Agenda Direksi — SPA vanilla, no build step. Layout mengikuti agenda-sekper.figcraft + agenda-direksi-v5.figcraft */
 const $ = (s) => document.querySelector(s)
 const app = $('#app')
 
@@ -6,6 +6,7 @@ let me = null
 let unread = 0
 let listFilter = 'semua'
 let listTerm = ''
+let notifSeg = 'semua'
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
 const api = async (p, opts = {}) => {
@@ -26,8 +27,16 @@ const toast = (msg, err = false) => {
   setTimeout(() => { t.hidden = true }, 2600)
 }
 const fmtD = (s) => s ? new Date(s + 'T00:00:00').toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' }) : ''
+const fmtDlong = (s) => s ? new Date(s + 'T00:00:00').toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : ''
 const fmtT = (s) => String(s || '').slice(0, 5)
 const today = () => new Date().toISOString().slice(0, 10)
+const hari = (tgl) => {
+  if (!tgl) return ''
+  const selisih = Math.round((new Date(tgl + 'T00:00:00') - new Date(today() + 'T00:00:00')) / 86400000)
+  return selisih === 0 ? 'Hari ini' : selisih === 1 ? 'Besok' : selisih > 0 ? 'H-' + selisih : 'Lewat ' + (-selisih) + ' hari'
+}
+const inisial = (nama) => String(nama || '').split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase()
+const avatarEl = (nama, cls = '') => `<span class="avatar ${cls}">${inisial(nama)}</span>`
 
 const IC = {
   home: 'M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z',
@@ -37,6 +46,14 @@ const IC = {
   bell: 'M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z',
   search: 'M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z',
   back: 'M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z',
+  send: 'M2.01 21 23 12 2.01 3 2 10l15 2-15 2z',
+  clock: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm4.2 14.2L11 13V7h1.5v5.2l4.5 2.7z',
+  pin: 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z',
+  check: 'M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z',
+  chevR: 'M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6z',
+  key: 'M12.65 10A5.99 5.99 0 0 0 7 6a6 6 0 1 0 0 12 5.99 5.99 0 0 0 5.65-4H17v4h4v-4h2v-4H12.65zM7 14a2 2 0 1 1 0-4 2 2 0 0 1 0 4z',
+  out: 'M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h8v-2H4z',
+  info: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 15h-2v-6h2zm0-8h-2V7h2z',
 }
 const svg = (k, s = 18) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}"><path d="${IC[k]}"/></svg>`
 
@@ -44,57 +61,69 @@ const chipSt = (st) => {
   const map = {
     menunggu: ['wait', 'Menunggu jawaban'], hadir: ['hadir', 'Hadir'],
     tidak_hadir: ['alih', 'Mengalihkan'], ditolak: ['ditolak', 'Ditolak'],
-    draft: ['selesai', 'Draft'], aktif: ['wait', 'Aktif'],
+    draft: ['draft', 'Draft'], aktif: ['wait', 'Menunggu jawaban'],
     selesai: ['selesai', 'Selesai'], batal: ['ditolak', 'Batal'],
   }
-  const [cls, t] = map[st] || ['selesai', st]
+  const [cls, t] = map[st] || ['draft', st]
   return `<span class="chip ${cls}">${t}</span>`
 }
+const chipSaya = (a) => a.status === 'draft' ? chipSt('draft') : a.pemegang ? chipSt(a.status_saya || 'menunggu') : chipSt(a.status)
 
 // ---------- shell ----------
 const isDesk = () => window.matchMedia('(min-width: 768px)').matches && me.role === 'sekper'
 function shell(content, active) {
   const sbNav = [
-    ['#/','Dashboard','home'], ['#/agenda','Agenda','cal'], ['#/buat','Buat Agenda','plus'],
-    ['#/pengguna','Pengguna','person'], ['#/notifikasi','Notifikasi','bell'],
+    ['#/', 'Dashboard', 'home'], ['#/agenda', 'Agenda', 'cal'], ['#/buat', 'Buat Agenda', 'plus'],
+    ['#/pengguna', 'Pengguna', 'person'], ['#/notifikasi', 'Notifikasi', 'bell'],
   ]
-  const bnItems = isDesk() ? [] : me.role === 'sekper'
-    ? [['#/','Dashboard','home'],['#/agenda','Agenda','cal'],['#/buat','Buat','plus'],['#/pengguna','Pengguna','person'],['#/notifikasi','Notif','bell']]
-    : [['#/','Beranda','home'],['#/agenda','Agenda','cal'],['#/notifikasi','Notifikasi','bell']]
   const side = `<div class="sidebar">
     <div class="brand"><span class="brand-dot"></span>Agenda Direksi</div>
     ${sbNav.map(([h, t, i]) => `<button class="sb-item ${active === t ? 'active' : ''}" data-nav="${h}">${svg(i)}${t}${t === 'Notifikasi' && unread ? `<span class="badge" style="position:static;margin-left:auto">${unread}</span>` : ''}</button>`).join('')}
-    <div class="sb-foot"><span class="avatar">${esc(me.nama.split(' ').map(w => w[0]).slice(0, 2).join(''))}</span>
-      <div style="flex:1"><div style="font-weight:bold">${esc(me.nama)}</div><div class="muted" style="color:var(--ink4);font-size:11px">${esc(me.role)}</div></div>
+    <div class="sb-foot">${avatarEl(me.nama)}
+      <div style="flex:1;min-width:0"><div style="font-weight:bold;font-size:13px">${esc(me.nama)}</div><div class="muted" style="color:var(--ink4);font-size:11px">${esc(me.role)}</div></div>
       <button class="btn sm outline" data-act="logout">Keluar</button></div>
   </div>`
+  const bnItems = [['#/', 'Beranda', 'home'], ['#/agenda', 'Agenda', 'cal'], ['#/notifikasi', 'Notifikasi', 'bell']]
   const bn = `<nav class="bottom-nav">
     ${bnItems.map(([h, t, i]) =>
-      `<a class="nav-tab ${(location.hash === h || (h === '#/' && (location.hash === '#/' || location.hash === ''))) ? 'active' : ''}" href="${h}" data-nav="${h}">${svg(i)}${t}${t.includes('Notif') && unread ? `<span class="badge">${unread}</span>` : ''}</a>`).join('')}
+      `<a class="nav-tab ${(location.hash === h || (h === '#/' && (location.hash === '#/' || location.hash === ''))) ? 'active' : ''}" href="${h}" data-nav="${h}">${svg(i, 22)}${t}${t === 'Notifikasi' && unread ? `<span class="badge">${unread}</span>` : ''}</a>`).join('')}
   </nav>`
+  const fab = me.role === 'sekper' ? `<button class="fab" data-nav="#/buat" aria-label="Buat agenda">${svg('plus', 24)}</button>` : ''
   app.innerHTML = isDesk()
     ? `<div class="shell">${side}<div class="main">${content}</div></div>`
-    : `${content}<div class="bottom-nav">${bn}</div>`
+    : `<div class="mwrap">${content}</div>${fab}${bn}`
 }
+const mobHead = () => `<div class="mob-head">
+  <div><div class="greet">Selamat datang,</div><div class="nama">${esc(me.nama)}</div></div>
+  <div class="mob-head-r">
+    <button class="bell" data-nav="#/notifikasi" aria-label="Notifikasi">${svg('bell', 22)}${unread ? '<span class="bell-dot"></span>' : ''}</button>
+    <button class="av-btn" data-nav="#/profil" aria-label="Profil">${avatarEl(me.nama, '')}</button>
+  </div></div>`
 
 // ---------- views: auth ----------
 function vLogin() {
-  app.innerHTML = `<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px">
-    <form data-form="login" class="card" style="width:100%;max-width:360px">
-      <div class="brand" style="padding:0 0 8px"><span class="brand-dot"></span>Agenda Direksi</div>
-      <p class="label" style="margin-bottom:20px">Masuk dengan akun Anda</p>
-      <div class="field"><label class="label">Username</label><input name="username" autocomplete="username" required></div>
-      <div class="field"><label class="label">Password</label><input name="password" type="password" autocomplete="current-password" required></div>
-      <button class="btn" style="width:100%">Masuk</button>
+  app.innerHTML = `<div class="auth">
+    <div class="auth-hero">
+      <div class="logo">${svg('cal', 18)}</div>
+      <div class="auth-judul">Agenda Direksi</div>
+      <div class="auth-sub">Masuk untuk melihat agenda dan konfirmasi kehadiran</div>
+    </div>
+    <form data-form="login" class="auth-body">
+      <div class="field"><label class="label">Username</label><input name="username" autocomplete="username" required placeholder="username Anda"></div>
+      <div class="field"><label class="label">Password</label><input name="password" type="password" autocomplete="current-password" required placeholder="••••••••"></div>
+      <button class="btn btn-block">Masuk</button>
     </form></div>`
 }
 function vGantiPassword() {
-  app.innerHTML = `<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px">
-    <form data-form="ganti-password" class="card" style="width:100%;max-width:360px">
-      <h1 style="font-size:20px;margin-bottom:6px">Ganti password</h1>
-      <p style="color:var(--ink4);font-size:12px;margin-bottom:20px">Password awal = username. Buat password baru untuk lanjut.</p>
-      <div class="field"><label class="label">Password baru</label><input name="password" type="password" minlength="6" required></div>
-      <button class="btn" style="width:100%">Simpan password</button>
+  app.innerHTML = `<div class="auth">
+    <div class="auth-hero">
+      <div class="logo">${svg('key', 18)}</div>
+      <div class="auth-judul">Ganti Password</div>
+      <div class="auth-sub">Password awal = username. Buat password baru untuk lanjut.</div>
+    </div>
+    <form data-form="ganti-password" class="auth-body">
+      <div class="field"><label class="label">Password baru</label><input name="password" type="password" minlength="6" required placeholder="minimal 6 karakter"></div>
+      <button class="btn btn-block">Simpan password</button>
     </form></div>`
 }
 
@@ -105,109 +134,191 @@ async function vDashboard() {
   const menunggu = items.filter(a => a.status === 'aktif' && a.pemegang).length
   const draft = items.filter(a => a.status === 'draft').length
   const recent = items.slice(0, 5)
-  shell(`<div class="page-head"><div><h1>Selamat datang, ${esc(me.nama)}</h1>
-    <div class="sub">Ringkasan agenda yang Anda kelola</div></div>
-    <button class="btn desktop-only" data-nav="#/buat">${svg('plus', 16)}Buat Agenda</button></div>
-  <div class="statbar">
-    <div class="st"><div class="num">${aktif}</div><div class="lbl">Agenda aktif</div></div>
-    <div class="st"><div class="num">${menunggu}</div><div class="lbl">Menunggu jawaban</div></div>
-    <div class="st"><div class="num">${draft}</div><div class="lbl">Draft</div></div>
-  </div>
-  <div class="card">
-    <div class="label" style="margin-bottom:12px">Agenda terbaru</div>
-    ${recent.length ? recent.map(a => rowAgenda(a, true)).join('') : '<div class="empty"><div class="big">Belum ada agenda</div><div style="margin-top:4px">Buat agenda pertama Anda</div></div>'}
-  </div>`, 'Dashboard')
+  const terk = items.filter(a => a.status === 'selesai').length
+  const alih = items.filter(a => a.n_alih > 0).length
+  const stats = [[aktif, 'Agenda aktif'], [menunggu, 'Menunggu jawaban'], [terk, 'Terkonfirmasi'], [alih, 'Dialihkan']]
+  const list = recent.length ? recent.map(a => rowAgenda(a, true)).join('')
+    : emptyState('Belum ada agenda', isDesk() ? 'Buat agenda pertama Anda' : 'Tekan tombol + untuk membuat agenda', true)
+  const tbl = `<table>
+    <thead><tr><th>Agenda</th><th>Tanggal</th><th>Pemegang</th><th>Status</th><th></th></tr></thead>
+    <tbody>${items.map(a => `<tr class="rowlink" data-nav="#/agenda/${a.id}">
+      <td><div class="td-t">${esc(a.judul)}</div><div class="td-m">${esc(a.lokasi || 'TBD')}</div></td>
+      <td class="td-m">${fmtD(a.tanggal)} · ${fmtT(a.jam)}</td>
+      <td>${a.pemegang ? `<div class="td-pg">${avatarEl(a.pemegang, 'sm')}<span class="td-m">${esc(a.pemegang)}</span></div>` : '<span class="td-none">—</span>'}</td>
+      <td>${chipSt(a.status)}</td>
+      <td class="td-chev">${svg('chevR', 14)}</td>
+    </tr>`).join('')}</tbody></table>`
+  shell(`${isDesk() ? `<div class="page-head"><div><h1>Dashboard</h1><div class="sub">${fmtDlong(today())}</div></div>
+    <button class="btn" data-nav="#/buat">${svg('plus', 16)}Buat Agenda</button></div>
+  <div class="statbar stat-cards">${stats.map(([n, l]) => `<div class="st"><div class="num">${n}</div><div class="lbl">${l}</div></div>`).join('')}</div>
+  <div class="card tblcard">${items.length ? tbl : emptyState('Belum ada agenda', 'Buat agenda pertama Anda', true)}</div>`
+    : `${mobHead()}
+  <div class="statbar">${[[aktif, 'Agenda aktif'], [menunggu, 'Menunggu jawaban'], [draft, 'Draft']].map(([n, l]) => `<div class="st"><div class="num">${n}</div><div class="lbl">${l}</div></div>`).join('')}</div>
+  <div class="label sec">AGENDA TERBARU</div>
+  ${list}`}`, 'Dashboard')
 }
 function rowAgenda(a, compact = false) {
   return `<button class="agcard" data-nav="#/agenda/${a.id}">
-    <div style="display:flex;justify-content:space-between;gap:12px;align-items:center">
-      <div style="flex:1;min-width:0">
-        <div style="font-weight:bold">${esc(a.judul)}</div>
+    <div class="ag-main">
+      <div class="ag-txt">
+        <div class="ag-t">${esc(a.judul)}</div>
         <div class="meta">${fmtD(a.tanggal)} · ${fmtT(a.jam)}${a.lokasi ? ' · ' + esc(a.lokasi) : ''}</div>
         ${!compact && a.pemegang ? `<div class="meta">Pemegang: ${esc(a.pemegang)}</div>` : ''}
       </div>
-      ${a.status === 'draft' ? chipSt('draft') : a.pemegang ? chipSt('menunggu') : chipSt(a.status)}
+      <div class="ag-side">${chipSaya(a)}<span class="chev">${svg('chevR', 16)}</span></div>
     </div></button>`
 }
+const emptyState = (judul, sub, buat = false) => `<div class="empty">
+  <div class="pill-ico">${svg('cal', 40)}</div>
+  <div class="empty-t">${judul}</div>
+  <div class="empty-s">${sub}</div>
+  ${buat ? `<button class="btn" data-nav="#/buat">Buat Agenda</button>` : ''}
+</div>`
 async function vAgendaList() {
   const items = await api(`/agenda?filter=${listFilter}&q=${encodeURIComponent(listTerm)}`)
-  if (isDesk()) {
-    shell(`<div class="page-head"><div><h1>Agenda</h1><div class="sub">Semua agenda yang kamu kelola</div></div>
-      <button class="btn" data-nav="#/buat">${svg('plus', 16)}Buat Agenda</button></div>
-    <div class="filters">
-      ${['semua', 'minggu', 'bulan'].map(f => `<button class="chip ${listFilter === f ? 'on' : ''}" data-act="filter" data-v="${f}">${{ semua: 'Semua', minggu: 'Minggu ini', bulan: 'Bulan ini' }[f]}</button>`).join('')}
+  const filterRow = `<div class="filters">
+      ${['semua', 'minggu', 'bulan'].map(f => `<button class="fchip ${listFilter === f ? 'on' : ''}" data-act="filter" data-v="${f}">${{ semua: 'Semua', minggu: 'Minggu ini', bulan: 'Bulan ini' }[f]}</button>`).join('')}
       <div class="search">${svg('search', 16)}<input id="q" placeholder="Cari agenda…" value="${esc(listTerm)}"></div>
-    </div>
-    <div class="card" style="padding:0 20px 4px">
-      <table><thead><tr><th>Agenda</th><th>Tanggal</th><th>Pemegang</th><th>Status</th></tr></thead><tbody>
+    </div>`
+  if (isDesk()) {
+    shell(`<div class="page-head"><div><h1>Agenda</h1><div class="sub">Semua agenda yang Anda kelola</div></div>
+      <button class="btn" data-nav="#/buat">${svg('plus', 16)}Buat Agenda</button></div>
+    ${filterRow}
+    <div class="card tblcard">
+      <table><thead><tr><th>Agenda</th><th>Tanggal</th><th>Pemegang</th><th>Status</th><th></th></tr></thead><tbody>
       ${items.map(a => `<tr class="rowlink" data-nav="#/agenda/${a.id}">
-        <td><div style="font-weight:bold">${esc(a.judul)}</div>${a.lokasi ? `<div class="muted">${esc(a.lokasi)}</div>` : ''}</td>
-        <td class="muted">${fmtD(a.tanggal)}<br>${fmtT(a.jam)}</td>
-        <td>${a.pemegang ? esc(a.pemegang) : '<span class="muted">—</span>'}</td>
-        <td>${a.status === 'draft' ? chipSt('draft') : a.pemegang ? chipSt('menunggu') : chipSt(a.status)}</td>
-      </tr>`).join('') || '<tr><td colspan="4"><div class="empty"><div class="big">Belum ada agenda di filter ini</div></div></td></tr>'}
+        <td><div class="td-t">${esc(a.judul)}</div></td>
+        <td class="td-m">${fmtD(a.tanggal)} · ${fmtT(a.jam)}</td>
+        <td><div class="td-pg">${a.pemegang ? avatarEl(a.pemegang, 'sm') + `<span>${esc(a.pemegang)}</span>` : '<span class="td-none">Belum ditentukan</span>'}</div></td>
+        <td>${chipSaya(a)}</td>
+        <td class="td-chev">${svg('chevR', 16)}</td>
+      </tr>`).join('') || `<tr><td colspan="5">${emptyState('Belum ada agenda di filter ini', 'Coba filter lain atau buat agenda baru', true)}</td></tr>`}
       </tbody></table></div>`, 'Agenda')
     $('#q').addEventListener('input', (e) => { listTerm = e.target.value; clearTimeout(vAgendaList._t); vAgendaList._t = setTimeout(vAgendaList, 300) })
   } else {
-    shell(`<div class="page-head"><div><h1>Agenda Saya</h1><div class="sub">Agenda yang melibatkan Anda</div></div></div>
-      ${items.length ? items.map(a => rowAgenda(a)).join('') : '<div class="card empty"><div class="big">Belum ada agenda</div><div style="margin-top:4px">Agenda yang dialihkan ke Anda akan muncul di sini</div></div>'}`, 'Agenda')
+    shell(`${mobHead()}
+    <div class="page-head"><h1>Agenda Saya</h1><div class="sub">Agenda yang melibatkan Anda</div></div>
+    ${filterRow}
+    ${items.length ? items.map(a => rowAgenda(a)).join('') : emptyState('Belum ada agenda', 'Agenda yang dialihkan ke Anda akan muncul di sini')}`,
+      'Agenda')
+    const q = $('#q')
+    if (q) q.addEventListener('input', (e) => { listTerm = e.target.value; clearTimeout(vAgendaList._t); vAgendaList._t = setTimeout(vAgendaList, 300) })
   }
 }
 async function vDetail(id) {
   const { agenda: a, chain: ch, pemegang: pg } = await api('/agenda/' + id)
   const mine = ch.find(c => c.user_id === me.id && c.status === 'menunggu')
+  const sekper = me.role === 'sekper'
+  const sub = `${fmtD(a.tanggal)} · ${fmtT(a.jam)} WIB${a.lokasi ? ' · ' + esc(a.lokasi) : ''}`
+
+  let head
+  if (isDesk()) {
+    head = `<div class="page-head">
+      <div style="display:flex;gap:12px;align-items:flex-start">
+        <button class="back-btn" data-nav="#/agenda" aria-label="Kembali">${svg('back', 20)}</button>
+        <div><h1 style="font-size:22px">${esc(a.judul)}</h1><div class="sub">${sub}</div></div>
+      </div>
+      <div style="display:flex;gap:12px">
+        ${a.status === 'draft' ? `<button class="btn" data-act="kirim" data-id="${a.id}">${svg('send', 16)}Kirim Agenda</button>` : ''}
+        <button class="btn outline" data-nav="#/agenda/${a.id}/edit">Edit Agenda</button>
+        ${a.status === 'aktif' ? `<button class="btn outline danger-o" data-act="batal" data-id="${a.id}">Batalkan</button>` : ''}
+        ${a.status === 'aktif' && !pg ? `<button class="btn" data-act="paksa" data-id="${a.id}">Paksa Titik</button>` : ''}
+      </div></div>`
+  } else {
+    head = `<div class="det-head">
+      <button class="back-btn" data-nav="back" aria-label="Kembali">${svg('back', 18)}</button>
+      <button class="back-btn" data-nav="#/profil" aria-label="Profil">${svg('person', 18)}</button></div>
+      <h1 class="det-judul">${esc(a.judul)}</h1><div class="det-sub">Agenda Direksi · ${fmtD(a.tanggal)} · ${fmtT(a.jam)}</div>`
+  }
+
+  const metaCard = `<div class="card">
+    <div class="meta-rows">
+      <div class="mrow">${svg('clock', 16)}<b>${fmtT(a.jam)} WIB</b></div>
+      <div class="mrow">${svg('cal', 16)}<span>${fmtDlong(a.tanggal)}</span></div>
+      ${a.lokasi ? `<div class="mrow">${svg('pin', 16)}<span>${esc(a.lokasi)}</span></div>` : ''}
+    </div>
+    <div class="divi"></div>
+    <div class="creator">Dibuat oleh ${esc(ch[0]?.nama || 'Sekper')}</div>
+    ${a.catatan ? `<div class="catatan">${esc(a.catatan)}</div>` : ''}
+    ${isDesk() ? `<div class="divi"></div>
+    <div class="label" style="margin-bottom:8px">Pemegang aktif</div>
+    ${pg ? `<div class="pg-row">${avatarEl(pg.nama, 'lg')}<div style="flex:1;min-width:0"><div class="pg-nm">${esc(pg.nama)}</div><div class="pg-role">${esc(pg.role)}</div></div>${chipSt('menunggu')}</div>`
+      : `<div style="color:var(--red);font-weight:bold">Rantai mentok — tidak ada pemegang aktif</div>
+         <div style="color:var(--ink4);font-size:12px;margin-top:4px">Semua penerima sudah menjawab / menolak. Paksa titik ke user lain atau batalkan agenda.</div>`}
+    <div class="divi"></div>
+    <div class="info-cols">
+      <div><div class="label">Tanggal & waktu</div><div class="info-v">${fmtD(a.tanggal)} · ${fmtT(a.jam)} WIB</div></div>
+      <div><div class="label">Lokasi</div><div class="info-v">${esc(a.lokasi || '—')}</div></div>
+    </div>` : ''}
+  </div>`
+
   const tlDot = (st) => st === 'hadir' ? 'green' : st === 'menunggu' ? 'hollow' : st === 'ditolak' ? 'red' : 'gray'
   const timeline = ch.map(c => `<div class="tl-item"><span class="tl-dot ${tlDot(c.status)}"></span>
     ${c.waktu_respon ? `<span class="tl-time">${fmtD(c.waktu_respon.slice(0, 10))} · ${c.waktu_respon.slice(11, 16)}</span>` : ''}
-    <div style="font-weight:${c.status === 'menunggu' ? 'normal' : 'bold'}">${esc(c.nama)} <span style="color:var(--ink4);font-weight:normal">(${esc(c.role)})</span></div>
+    <div class="tl-t" style="font-weight:${c.status === 'menunggu' ? 'normal' : 'bold'}">${esc(c.nama)} <span class="tl-role">(${esc(c.role)})</span></div>
     <div class="tl-sub">${{ hadir: 'Hadir', menunggu: 'Menunggu konfirmasi kehadiran', tidak_hadir: `Mengalihkan ke ${esc((ch.find(x => x.id === c.alih_ke_id) || {}).nama || '—')}`, ditolak: 'Menolak pengalihan' }[c.status] || esc(c.status)}</div>
     ${c.alasan ? `<div class="tl-sub">Alasan: ${esc(c.alasan)}</div>` : ''}
   </div>`).join('')
 
-  let actions = ''
-  if (isDesk()) {
-    actions = `<div style="display:flex;gap:12px">
-      ${a.status === 'draft' ? `<button class="btn" data-act="kirim" data-id="${a.id}">Kirim Agenda</button>` : ''}
-      <button class="btn outline" data-nav="#/agenda/${a.id}/edit">Edit Agenda</button>
-      ${a.status === 'aktif' ? `<button class="btn danger" data-act="batal" data-id="${a.id}">Batalkan</button>` : ''}
-      ${a.status === 'aktif' && !pg ? `<button class="btn" data-act="paksa" data-id="${a.id}">Paksa Titik</button>` : ''}
-    </div>`
-  } else if (mine) {
-    actions = `<div class="card" style="display:flex;gap:12px">
-      <button class="btn" style="flex:1;background:var(--green)" data-act="hadir" data-id="${mine.id}">Hadir</button>
-      <button class="btn danger" style="flex:1" data-act="alih" data-id="${mine.id}">Tidak dapat hadir</button>
-    </div>`
-  }
-  shell(`<div class="page-head">
-    <div style="display:flex;gap:12px;align-items:flex-start">
-      <button class="btn outline desktop-only" style="min-height:44px;width:44px;padding:0" data-nav="#/agenda">${svg('back', 20)}</button>
-      <div><h1 style="font-size:22px">${esc(a.judul)}</h1>
-      <div class="sub">${fmtD(a.tanggal)} · ${fmtT(a.jam)} WIB${a.lokasi ? ' · ' + esc(a.lokasi) : ''}</div></div>
-    </div>${isDesk() ? actions : ''}</div>
-  ${!isDesk() && actions}
-  <div class="card">
-    <div class="label" style="margin-bottom:12px">Pemegang aktif</div>
-    ${pg ? `<div style="display:flex;align-items:center;gap:12px">
-      <span class="avatar">${esc(pg.nama.split(' ').map(w => w[0]).slice(0, 2).join(''))}</span>
-      <div style="flex:1"><div style="font-weight:bold">${esc(pg.nama)}</div><div style="color:var(--ink4);font-size:12px">${esc(pg.role)}</div></div>
-      ${chipSt('menunggu')}</div>`
-      : `<div style="color:var(--red);font-weight:bold">Rantai mentok — tidak ada pemegang aktif</div>
-         <div style="color:var(--ink4);font-size:12px;margin-top:4px">Semua penerima sudah menjawab / menolak. Paksa titik ke user lain atau batalkan agenda.</div>`}
-    <div style="border-top:1px solid var(--line);margin:16px 0"></div>
-    <div style="display:flex;gap:32px">
-      <div><div class="label">Tanggal & Waktu</div><div style="margin-top:4px">${fmtD(a.tanggal)} · ${fmtT(a.jam)} WIB</div></div>
-      <div><div class="label">Lokasi</div><div style="margin-top:4px">${esc(a.lokasi || '—')}</div></div>
-    </div>
-    ${a.catatan ? `<div style="border-top:1px solid var(--line);margin:16px 0"></div><div class="label">Catatan</div><div style="margin-top:4px;color:var(--ink6)">${esc(a.catatan)}</div>` : ''}
+  const trace = !isDesk() && ch.length > 0 ? `<div class="label sec">RANTAI PENGALIHAN</div>
+  <div class="card"><div class="trace">
+    ${ch.map((c, i) => {
+    const next = ch[i + 1]
+    const lineCls = next ? (next.status === 'menunggu' && c.status !== 'menunggu' ? 'sky' : 'done') : ''
+    const isMine = c.user_id === me.id
+    return `${i > 0 ? `<span class="tr-line ${lineCls}"></span>` : ''}
+      <div class="tr-node">
+        <span class="tr-dot ${c.status === 'menunggu' ? 'ring' : c.status === 'hadir' ? 'green' : c.status === 'ditolak' ? 'red' : ''}"></span>
+        <span class="tr-nm ${isMine ? 'me' : ''}">${esc(c.nama.split(' ')[0])}</span>
+      </div>`
+  }).join('')}
   </div>
-  <div class="timeline-wrap"><div class="label" style="margin-bottom:4px">Riwayat disposisi</div>
-    <div class="timeline">${timeline}</div></div>
+  ${mine ? `<div class="tr-note">Anda pemegang aktif agenda ini</div>` : ''}
+  </div>` : ''
+
+  const banner = mine ? `<div class="banner">${svg('bell', 16)}Menunggu jawaban Anda — ${hari(a.tanggal).toLowerCase()} ${fmtT(a.jam)}</div>` : ''
+  const ctaMobile = !isDesk() && mine ? `
+    <button class="btn outline btn-block" data-act="alih" data-id="${mine.id}">Tidak dapat hadir — alihkan</button>
+    <button class="btn btn-block" data-act="hadir" data-id="${mine.id}">Hadir</button>
+    <div class="helper">Pengalihan wajib menyertakan alasan</div>` : ''
+  const ctaSekperMobile = !isDesk() && sekper ? `
+    <div style="display:flex;gap:12px;margin-top:16px">
+      ${a.status === 'draft' ? `<button class="btn" style="flex:1" data-act="kirim" data-id="${a.id}">Kirim Agenda</button>` : ''}
+      ${a.status === 'aktif' ? `<button class="btn outline danger-o" style="flex:1" data-act="batal" data-id="${a.id}">Batalkan</button>` : ''}
+      ${a.status === 'aktif' && !pg ? `<button class="btn" style="flex:1" data-act="paksa" data-id="${a.id}">Paksa Titik</button>` : ''}
+    </div>` : ''
+
+  shell(`${head}
+  ${metaCard}
+  ${trace}
+  ${banner}
+  ${ctaMobile}${ctaSekperMobile}
+  <div class="card timeline-wrap"><div class="label" style="margin-bottom:4px">Riwayat disposisi</div><div class="timeline">${timeline}</div></div>
   ${a.status === 'draft' && isDesk() ? '<div class="card" style="margin-top:16px;color:var(--ink4)">Draft — belum dikirim ke peserta. Tekan Kirim Agenda untuk mengirim.</div>' : ''}
-  `, isDesk() ? 'Agenda' : 'Agenda')
+  `, 'Agenda')
+}
+async function vAlih(pesertaId) {
+  const peng = await api('/users/pengganti')
+  shell(`<div class="det-head">
+    <button class="back-btn" data-nav="back" aria-label="Kembali">${svg('back', 18)}</button>
+    <div style="margin-left:14px"><div class="fm-judul">Alihkan Agenda</div></div></div>
+  <form data-form="alih" data-id="${pesertaId}" class="fm">
+    <div class="label sec">PILIH PENGGANTI</div>
+    ${peng.map(p => `<label class="opt">
+      ${avatarEl(p.nama, 'lg')}
+      <span class="opt-txt"><span class="opt-nm">${esc(p.role)} ${esc(p.nama)}</span></span>
+      <input type="radio" name="pengganti" value="${p.id}" required>
+      <span class="radio"></span></label>`).join('') || '<div class="helper">Tidak ada pengganti tersedia</div>'}
+    <div class="label sec">ALASAN PENGALIHAN (WAJIB)</div>
+    <textarea name="alasan" rows="4" required placeholder="Contoh: bertepatan dengan kegiatan lapangan di luar kota"></textarea>
+    <div class="infobar">${svg('info', 16)}Pengganti langsung menerima notifikasi dan menjadi pemegang aktif</div>
+    <div class="helper">Tidak bisa sama sekali? <button type="button" class="btn link danger" data-act="tolak" data-id="${pesertaId}">Tolak tanpa pengganti</button></div>
+    <button class="btn btn-block sticky">${svg('send', 16)}Kirim Pengalihan</button>
+  </form>`, 'Agenda')
 }
 async function vBuat(id) {
   const isEdit = !!id
-  let a = { pesertaList: [] }
+  let a = {}
   let terpilih = []
   if (isEdit) {
     const d = await api('/agenda/' + id)
@@ -215,24 +326,40 @@ async function vBuat(id) {
     terpilih = d.chain.map(c => c.user_id)
   }
   const users = (await api('/users')).filter(u => u.status === 'aktif' && u.role !== 'sekper')
-  shell(`<div class="page-head"><div style="display:flex;gap:12px;align-items:center">
-    <button class="btn outline desktop-only" style="min-height:44px;width:44px;padding:0" data-nav="#/agenda">${svg('back', 20)}</button>
-    <div><h1>${isEdit ? 'Edit Agenda' : 'Buat Agenda'}</h1><div class="sub">${isEdit ? esc(a.judul) : 'Isi detail agenda, simpan sebagai draft atau langsung kirim'}</div></div></div></div>
-  <form data-form="simpan-agenda" data-id="${id || ''}" class="card">
-    <div class="field"><label class="label">Judul agenda</label><input name="judul" required value="${esc(a.judul || '')}"></div>
-    <div style="display:flex;gap:12px"><div class="field" style="flex:1"><label class="label">Tanggal</label><input name="tanggal" type="date" required value="${a.tanggal || today()}"></div>
-    <div class="field" style="flex:1"><label class="label">Jam</label><input name="jam" type="time" required value="${fmtT(a.jam) || '09:00'}"></div></div>
-    <div class="field"><label class="label">Lokasi</label><input name="lokasi" placeholder="Ruang rapat / link Zoom" value="${esc(a.lokasi || '')}"></div>
-    <div class="field"><label class="label">Catatan</label><textarea name="catatan" rows="3">${esc(a.catatan || '')}</textarea></div>
-    <div class="field"><label class="label">Peserta</label>
-      ${users.map(u => `<label class="checkrow"><input type="checkbox" name="peserta" value="${u.id}" ${terpilih.includes(u.id) ? 'checked' : ''}>
-        <span style="flex:1"><span style="font-weight:bold">${esc(u.nama)}</span> <span style="color:var(--ink4);font-size:11px">${esc(u.role)}</span></span></label>`).join('')}
-    </div>
+  const fld = (l, inp) => `<div class="field"><label class="label">${l}</label>${inp}</div>`
+  const form = `
+    ${fld('JUDUL AGENDA', `<input name="judul" required value="${esc(a.judul || '')}" placeholder="Contoh: Rapat Evaluasi Kinerja Q2">`)}
     <div style="display:flex;gap:12px">
-      <button type="button" class="btn outline" data-act="simpan-draft">Simpan</button>
-      <button type="submit" class="btn" style="flex:1">Simpan & Kirim</button>
+      <div class="field" style="flex:1"><label class="label">TANGGAL</label><input name="tanggal" type="date" required value="${a.tanggal || today()}"></div>
+      <div class="field" style="flex:1"><label class="label">WAKTU</label><input name="jam" type="time" required value="${fmtT(a.jam) || '09:00'}"></div>
     </div>
-  </form>`, isDesk() ? 'Buat Agenda' : '')
+    ${fld('LOKASI', `<input name="lokasi" placeholder="Ruang Rapat / link Zoom" value="${esc(a.lokasi || '')}">`)}
+    ${fld('CATATAN', `<textarea name="catatan" rows="3" placeholder="Catatan untuk peserta (opsional)…">${esc(a.catatan || '')}</textarea>`)}`
+  const peserta = `<div class="label sec ps-head">PESERTA <span class="hint">pilih minimal 1</span></div>
+    <div class="ps-list">
+    ${users.map(u => `<label class="ps-row">
+      ${avatarEl(u.nama, 'md')}
+      <span class="ps-nm">${esc(u.role)} — ${esc(u.nama)}</span>
+      <input type="checkbox" name="peserta" value="${u.id}" ${terpilih.includes(u.id) ? 'checked' : ''}>
+      <span class="cbox"></span></label>`).join('')}
+    </div>
+    <div class="note-bar">${svg('info', 16)}Peserta yang tidak dapat hadir dapat mengalihkan tugas atau menolak</div>`
+  const btns = isDesk()
+    ? `<div class="form-foot"><button type="button" class="btn outline" data-act="tutup-buat">Batal</button>
+       <button type="button" class="btn outline" data-act="simpan-draft">${svg('check', 16)}Simpan Draft</button>
+       <button type="submit" class="btn">${svg('send', 16)}Simpan & Kirim</button></div>`
+    : `<div class="helper" style="margin-top:12px">Peserta mendapat notifikasi H-1 dan hari-H</div>
+       <button type="submit" class="btn btn-block sticky">${svg('send', 16)}Simpan & Kirim Undangan</button>`
+  shell(`${isDesk()
+    ? `<div class="page-head"><div><h1>${isEdit ? 'Edit Agenda' : 'Buat Agenda'}</h1><div class="sub">Undangan otomatis H-1 & hari-H</div></div></div>
+    <form data-form="simpan-agenda" data-id="${id || ''}" class="card buat-grid">
+      <div class="buat-l">${form}</div>
+      <div class="buat-r">${peserta}</div>
+      ${btns}</form>`
+    : `<div class="det-head"><button class="back-btn" data-nav="#/" aria-label="Kembali">${svg('back', 18)}</button>
+       <div style="margin-left:14px"><div class="fm-judul">${isEdit ? 'Edit Agenda' : 'Buat Agenda'}</div><div class="det-sub">Undangan terkirim H-1 & hari-H</div></div></div>
+    <form data-form="simpan-agenda" data-id="${id || ''}" class="fm">
+      ${form}${peserta}${btns}</form>`}`, 'Buat Agenda')
 }
 async function vPengguna() {
   const users = await api('/users')
@@ -244,16 +371,16 @@ async function vPengguna() {
       <input name="username" placeholder="Username" required style="flex:1;min-width:120px">
       <select name="role" style="flex:1;min-width:120px"><option value="direksi">Direksi</option><option value="kadiv">Kadiv</option><option value="kabak">Kabak</option><option value="sekper">Sekper</option></select>
       <button class="btn">Simpan</button></div>
-      <p style="color:var(--ink4);font-size:11px;margin-top:8px">Password awal = username, wajib diganti saat login pertama.</p>
+      <p class="helper" style="margin-top:8px">Password awal = username, wajib diganti saat login pertama.</p>
     </form></div>
-  <div class="card" style="padding:0 20px 4px">
+  <div class="card tblcard">
     <table><thead><tr><th>Nama</th><th>Role</th><th>Status</th><th></th></tr></thead><tbody>
     ${users.map(u => `<tr>
-      <td><div style="font-weight:bold">${esc(u.nama)}</div><div class="muted">${esc(u.username)}${u.push_gagal ? ' · push gagal' : ''}</div></td>
-      <td><div class="muted">${esc(u.role)}</div></td>
-      <td><select data-act="ubah-status" data-id="${u.id}" style="width:auto;height:32px;padding:4px 10px">
+      <td><div class="td-pg">${avatarEl(u.nama, 'sm')}<span><div class="td-t">${esc(u.nama)}</div><div class="td-m">${esc(u.username)}${u.push_gagal ? ' · push gagal' : ''}</div></span></div></td>
+      <td class="td-m">${esc(u.role)}</td>
+      <td><select class="st-sel" data-act="ubah-status" data-id="${u.id}">
         ${['aktif', 'cuti', 'nonaktif'].map(s => `<option ${u.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select></td>
-      <td style="text-align:right"><button class="btn sm danger" data-act="hapus-user" data-id="${u.id}">Hapus</button></td>
+      <td style="text-align:right"><button class="btn sm outline danger-o" data-act="hapus-user" data-id="${u.id}">Hapus</button></td>
     </tr>`).join('')}
     </tbody></table></div>`, 'Pengguna')
 }
@@ -262,30 +389,76 @@ async function vPengguna() {
 async function vBeranda() {
   const items = await api('/agenda?filter=semua')
   const naik = items.filter(a => a.tanggal >= today()).sort((x, y) => x.tanggal.localeCompare(y.tanggal))
-  const tampil = naik.length ? naik.slice(0, 3) : items.slice(0, 3)
-  shell(`<div class="page-head"><div><h1>Halo, ${esc(me.nama.split(' ')[0])}</h1>
-    <div class="sub">${naik.length ? `${naik.length} agenda mendatang melibatkan Anda` : 'Terbaru yang melibatkan Anda'}</div></div>
-    <button class="btn sm outline" data-act="logout">Keluar</button></div>
-  ${tampil.length ? tampil.map(a => `<button class="agcard" data-nav="#/agenda/${a.id}">
-    <div style="display:flex;justify-content:space-between;gap:12px">
-      <div style="flex:1;min-width:0"><div style="font-weight:bold">${esc(a.judul)}</div>
-      <div class="meta">${fmtD(a.tanggal)} · ${fmtT(a.jam)}${a.lokasi ? ' · ' + esc(a.lokasi) : ''}</div>
-      ${a.status_saya ? `<div class="row2">${chipSt(a.status_saya)}</div>` : ''}</div>
-    </div></button>`).join('')
-    : '<div class="card empty"><div class="pill-ico">' + svg('cal', 44) + '</div><div class="big">Belum ada agenda</div><div style="margin-top:4px">Agenda baru dan pengalihan akan muncul di sini</div></div>'}`,
+  const hero = naik[0] || items[0]
+  const mendatang = (naik.length ? naik.slice(1, 4) : items.slice(1, 4))
+  const heroHtml = hero ? `<button class="hero" data-nav="#/agenda/${hero.id}">
+    <div class="hero-l">
+      <div class="label sec">AGENDA BERIKUTNYA</div>
+      <div class="hero-t">${esc(hero.judul)}</div>
+      <div class="mrow">${svg('clock', 15)}<span>${hari(hero.tanggal)} · ${fmtD(hero.tanggal)} · ${fmtT(hero.jam)} WIB</span></div>
+      ${hero.lokasi ? `<div class="mrow">${svg('pin', 15)}<span>${esc(hero.lokasi)}</span></div>` : ''}
+      <div class="hero-chip">${hero.status_saya === 'hadir' ? 'Kehadiran tercatat' : hero.pemegang ? 'Menunggu jawaban Anda' : 'Agenda baru'}</div>
+    </div>
+    <div class="hero-r"><div class="hero-h">${hero.tanggal === today() ? 'H' : 'H-' + Math.max(1, Math.round((new Date(hero.tanggal + 'T00:00:00') - new Date(today() + 'T00:00:00')) / 86400000))}</div>
+    <span class="chev">${svg('chevR', 20)}</span></div>
+  </button>` : ''
+  shell(`${mobHead()}
+  ${heroHtml}
+  <div class="statbar st-inline">
+    <div class="st"><div class="num">${naik.length}</div><div class="lbl">Agenda mendatang</div></div>
+    <div class="st"><div class="num">${items.filter(a => a.status_saya === 'menunggu' && a.pemegang).length}</div><div class="lbl">Menunggu jawaban</div></div>
+  </div>
+  ${mendatang.length ? `<div class="label sec">AGENDA MENDATANG</div>${mendatang.map(a => rowAgenda(a, true)).join('')}` : ''}`,
     'Beranda')
 }
 async function vNotifikasi() {
   const { items, unread: n } = await api('/notifikasi')
   unread = n
-  shell(`<div class="page-head"><div><h1>Notifikasi</h1><div class="sub">${n} belum dibaca</div></div>
-    ${n ? '<button class="btn sm outline" data-act="baca-semua">Tandai dibaca</button>' : ''}</div>
-  <div class="card" style="padding:0">
-    ${items.length ? items.map(x => `<button class="notif-item ${x.dibaca ? '' : 'unread'}" data-act="buka-notif" data-id="${x.id}" data-agenda="${x.agenda_id}">
-      <div class="t">${{ agenda_baru: 'Agenda baru', alihan: 'Pengalihan agenda', h1: 'Pengingat H-1', h: 'Hari ini', paksa: 'Titik paksa', ditolak: 'Pengalihan ditolak' }[x.tipe]}</div>
-      <div class="s">${esc(x.judul)}</div><span class="w">${x.waktu.slice(11, 16)}</span>
-    </button>`).join('') : '<div class="empty"><div class="pill-ico">' + svg('bell', 44) + '</div><div class="big">Tidak ada notifikasi</div></div>'}
-  </div>`, 'Notifikasi')
+  const segs = [['semua', 'Semua'], ['agenda', 'Agenda'], ['pengalihan', 'Pengalihan']]
+  const tipeGrp = { agenda_baru: 'agenda', h1: 'agenda', h: 'agenda', alihan: 'pengalihan', paksa: 'pengalihan', ditolak: 'pengalihan' }
+  const tampil = items.filter(x => notifSeg === 'semua' || tipeGrp[x.tipe] === notifSeg)
+  const icon = { agenda_baru: 'cal', alihan: 'send', h1: 'clock', h: 'clock', paksa: 'info', ditolak: 'back' }
+  let lastDay = ''
+  const rows = tampil.map(x => {
+    const day = x.waktu.slice(0, 10)
+    const isToday = day === today()
+    const isYest = day === new Date(Date.now() - 86400000).toISOString().slice(0, 10)
+    const lbl = isToday ? 'HARI INI' : isYest ? 'KEMARIN' : fmtD(day).toUpperCase()
+    const g = lbl !== lastDay ? `<div class="label sec">${lbl}</div>` : ''
+    lastDay = lbl
+    return g + `<button class="notif ${x.dibaca ? '' : 'unread'}" data-act="buka-notif" data-id="${x.id}" data-agenda="${x.agenda_id}">
+      <span class="n-ico">${svg(icon[x.tipe] || 'bell', 18)}</span>
+      <span class="n-txt"><span class="n-t">${{ agenda_baru: 'Agenda baru', alihan: 'Pengalihan agenda', h1: 'Pengingat H-1', h: 'Hari ini', paksa: 'Titik paksa', ditolak: 'Pengalihan ditolak' }[x.tipe]}</span>
+      <span class="n-s">${esc(x.judul)}</span></span>
+      <span class="n-w">${x.waktu.slice(11, 16)}</span>
+      ${x.dibaca ? '' : '<span class="n-dot"></span>'}
+    </button>`
+  }).join('')
+  shell(`${mobHead()}
+  <div class="page-head"><div><h1>Notifikasi</h1><div class="sub">${n} belum dibaca</div></div>
+    ${n ? '<button class="linkbtn" data-act="baca-semua">Tandai dibaca</button>' : ''}</div>
+  <div class="seg">${segs.map(([v, t]) => `<button class="seg-b ${notifSeg === v ? 'on' : ''}" data-act="notif-seg" data-v="${v}">${t}</button>`).join('')}</div>
+  ${tampil.length ? rows : `<div class="empty"><div class="pill-ico">${svg('bell', 40)}</div>
+    <div class="empty-t">Belum ada notifikasi</div><div class="empty-s">Notifikasi H-1, hari-H, dan pengalihan<br>dari agenda akan muncul di sini</div></div>`}`,
+    'Notifikasi')
+}
+function vProfil() {
+  shell(`<div class="prof-hero">
+    <button class="back-btn dark" data-nav="#/" aria-label="Kembali">${svg('back', 18)}</button>
+    ${avatarEl(me.nama, 'xl')}
+    <div class="prof-nm">${esc(me.nama)}</div>
+    <span class="prof-role">${esc(me.role)}</span>
+    <div class="prof-un">@${esc(me.username)}</div>
+  </div>
+  <div class="card prof-menu">
+    <button class="pm-item" data-nav="#/ganti-password">${svg('key', 18)}<span class="pm-t">Ubah Password</span><span class="pm-chev">${svg('chevR', 16)}</span></button>
+    <div class="divi"></div>
+    <button class="pm-item" data-nav="#/notifikasi">${svg('bell', 18)}<span class="pm-t">Notifikasi</span>${unread ? `<span class="badge" style="position:static;margin-left:auto;margin-right:8px">${unread}</span>` : ''}<span class="pm-chev">${svg('chevR', 16)}</span></button>
+  </div>
+  <div class="card prof-menu">
+    <button class="pm-item danger" data-act="logout">${svg('out', 18)}<span class="pm-t">Keluar</span></button>
+  </div>
+  <div class="ver">Agenda Direksi · v1.0.0</div>`, '')
 }
 
 // ---------- modals ----------
@@ -298,22 +471,6 @@ function modal(html) {
   document.body.appendChild(bg)
   return bg
 }
-async function modalAlih(pesertaId) {
-  const peng = await api('/users/pengganti')
-  const bg = modal(`<h2>Alihkan tugas</h2>
-    <form data-form="alih" data-id="${pesertaId}">
-      <div class="field"><label class="label">Pilih pengganti</label>
-        <select name="pengganti" required><option value="">— pilih —</option>
-        ${peng.map(p => `<option value="${p.id}">${esc(p.nama)} (${esc(p.role)})</option>`).join('')}</select></div>
-      <div class="field"><label class="label">Alasan (wajib)</label>
-        <textarea name="alasan" rows="2" required placeholder="Contoh: bentrok rapat dinas di luar kota"></textarea></div>
-      <div style="display:flex;gap:12px">
-        <button type="button" class="btn outline" style="flex:1" data-act="tutup-modal">Batal</button>
-        <button class="btn" style="flex:1">Alihkan</button></div>
-    </form>
-    <button type="button" class="btn link danger" data-act="tolak" data-id="${pesertaId}">Tidak bisa juga — tolak tanpa pengganti</button>`)
-  return bg
-}
 async function modalTolak(pesertaId) {
   modal(`<h2>Tolak pengalihan?</h2>
     <p style="color:var(--ink6);margin-bottom:16px">Agenda akan kembali ke sekretaris untuk diputuskan ulang.</p>
@@ -321,7 +478,7 @@ async function modalTolak(pesertaId) {
       <div class="field"><label class="label">Alasan (opsional)</label><textarea name="alasan" rows="2"></textarea></div>
       <div style="display:flex;gap:12px">
         <button type="button" class="btn outline" style="flex:1" data-act="tutup-modal">Kembali</button>
-        <button class="btn danger" style="flex:1">Tolak</button></div>
+        <button class="btn danger-solid" style="flex:1">Tolak</button></div>
     </form>`)
 }
 async function modalPaksa(agendaId) {
@@ -334,24 +491,29 @@ async function modalPaksa(agendaId) {
         ${peng.map(p => `<option value="${p.id}">${esc(p.nama)} (${esc(p.role)})</option>`).join('')}</select></div>
       <div style="display:flex;gap:12px">
         <button type="button" class="btn outline" style="flex:1" data-act="tutup-modal">Batal</button>
-        <button class="btn danger" style="flex:1">Paksa</button></div>
+        <button class="btn" style="flex:1">Paksa</button></div>
     </form>`)
 }
 
 // ---------- actions ----------
 document.addEventListener('click', async (e) => {
   const nav = e.target.closest('[data-nav]')
-  if (nav) { location.hash = nav.dataset.nav; return }
+  if (nav) {
+    if (nav.dataset.nav === 'back') { history.back(); return }
+    location.hash = nav.dataset.nav
+    return
+  }
   const el = e.target.closest('[data-act]')
   if (!el) return
   const { act, id, v, agenda: agId } = el.dataset
   try {
     if (act === 'logout') { await api('/logout', { method: 'POST' }); me = null; location.hash = '#/login' }
     else if (act === 'filter') { listFilter = v; vAgendaList() }
+    else if (act === 'notif-seg') { notifSeg = v; vNotifikasi() }
     else if (act === 'hadir') {
       await api(`/agenda/peserta/${id}/hadir`, { method: 'POST' })
       toast('Terima kasih, kehadiran tercatat'); route()
-    } else if (act === 'alih') modalAlih(id)
+    } else if (act === 'alih') location.hash = `#/agenda/peserta/${id}/alih`
     else if (act === 'tolak') modalTolak(id)
     else if (act === 'paksa') modalPaksa(id)
     else if (act === 'kirim') {
@@ -369,6 +531,7 @@ document.addEventListener('click', async (e) => {
       const f = el.closest('form')
       submitAgenda(f, false).catch((err) => toast(err.message, true))
     }
+    else if (act === 'tutup-buat') { history.length > 1 ? history.back() : (location.hash = '#/agenda') }
     else if (act === 'tutup-modal') el.closest('.modal-bg').remove()
     else if (act === 'buka-notif') {
       await api(`/notifikasi/${id}/baca`, { method: 'POST' })
@@ -400,10 +563,9 @@ async function submitAgenda(f, kirim) {
   const data = Object.fromEntries(new FormData(f).entries())
   const peserta = [...f.querySelectorAll('input[name="peserta"]:checked')].map(i => +i.value)
   if (kirim && peserta.length === 0) return toast('Pilih minimal satu peserta sebelum kirim', true)
-  const body = JSON.stringify({ ...data, peserta, kirim })
   const fid = f.dataset.id
   if (fid) await api('/agenda/' + fid, { method: 'PUT', body: JSON.stringify({ ...data, peserta }) })
-  else await api('/agenda', { method: 'POST', body })
+  else await api('/agenda', { method: 'POST', body: JSON.stringify({ ...data, peserta, kirim }) })
   toast(kirim ? 'Agenda terkirim ke peserta' : 'Draft tersimpan')
   location.hash = '#/agenda'
 }
@@ -426,8 +588,7 @@ document.addEventListener('submit', async (e) => {
     } else if (kind === 'alih') {
       const d = Object.fromEntries(new FormData(f))
       await api(`/agenda/peserta/${f.dataset.id}/alih`, { method: 'POST', body: JSON.stringify({ pengganti_id: +d.pengganti, alasan: d.alasan }) })
-      f.closest('.modal-bg').remove()
-      toast('Tugas dialihkan'); route()
+      toast('Tugas dialihkan'); location.hash = '#/'
     } else if (kind === 'tolak') {
       const d = Object.fromEntries(new FormData(f))
       await api(`/agenda/peserta/${f.dataset.id}/tolak`, { method: 'POST', body: JSON.stringify({ alasan: d.alasan }) })
@@ -470,17 +631,19 @@ async function route() {
     if (h === '#/ganti-password') return vGantiPassword()
     if (h === '#/') return isDesk() ? vDashboard() : vBeranda()
     if (h === '#/agenda') return vAgendaList()
+    const mAlih = h.match(/^#\/agenda\/peserta\/(\d+)\/alih$/)
+    if (mAlih) return vAlih(+mAlih[1])
     if (h.startsWith('#/agenda/') && h.endsWith('/edit')) return vBuat(h.split('/')[2])
     if (h.startsWith('#/agenda/')) return vDetail(+h.split('/')[2])
     if (h === '#/buat') return vBuat()
     if (h === '#/pengguna') return isDesk() ? vPengguna() : (location.hash = '#/')
     if (h === '#/notifikasi') return vNotifikasi()
+    if (h === '#/profil') return vProfil()
     location.hash = '#/'
   } catch (err) { toast(err.message, true) }
 }
 window.addEventListener('hashchange', route)
 window.addEventListener('resize', () => { clearTimeout(route._t); route._t = setTimeout(route, 200) })
-if (me) route()
 ; (async () => {
   try { me = await api('/me'); unread = (await api('/notifikasi')).unread } catch (_) { me = null }
   route()
