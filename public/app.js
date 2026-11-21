@@ -574,7 +574,10 @@ document.addEventListener('submit', async (e) => {
   if (!f) return
   e.preventDefault()
   window.Capacitor?.Plugins?.Keyboard?.hide?.() // APK: WebView kadang bandel walau sudah blur
-  document.activeElement?.blur() // tutup soft keyboard (SPA rerender tanpa blur = keyboard numpuk)
+  // tutup soft keyboard: blur + readonly-trick (Android Chrome bandel; activeElement belum tentu input)
+  const inputs = f.querySelectorAll('input, textarea')
+  inputs.forEach(i => { i.readOnly = true; i.blur() })
+  setTimeout(() => inputs.forEach(i => { i.readOnly = false }), 150)
   const kind = f.dataset.form
   try {
     if (kind === 'login') {
