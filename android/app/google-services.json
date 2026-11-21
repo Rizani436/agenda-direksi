@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "307331757540",
+    "project_id": "agenda-direksi-6373f",
+    "storage_bucket": "agenda-direksi-6373f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:307331757540:android:0bcb9ec098ba47114983f1",
+        "android_client_info": {
+          "package_name": "online.nexusaniway.siagen"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAn6eACVp_u32Uw0lJO9NolVyekqF0g4hg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

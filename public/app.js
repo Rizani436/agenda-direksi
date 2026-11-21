@@ -609,6 +609,19 @@ document.addEventListener('submit', async (e) => {
 // ---------- push ----------
 async function setupPush() {
   try {
+    // APK Capacitor: FCM via plugin native (Push API browser tidak jalan di WebView)
+    const PN = window.Capacitor?.Plugins?.PushNotifications
+    if (PN) {
+      const st = await PN.requestPermissions()
+      if (!st.granted) return
+      PN.addListener('registration', (t) =>
+        api('/push/fcm-token', { method: 'POST', body: JSON.stringify({ token: t.value }) }).catch(() => {}))
+      PN.addListener('pushNotificationReceived', async () => {
+        try { unread = (await api('/notifikasi')).unread; route() } catch (_) { /* best-effort */ }
+      })
+      PN.register()
+      return
+    }
     if (!('serviceWorker' in navigator) || localStorage.getItem('push-on')) return
     const reg = await navigator.serviceWorker.register('/sw.js')
     if (Notification.permission === 'default') await Notification.requestPermission()

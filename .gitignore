@@ -1,6 +1,7 @@
 node_modules/
 vapid.json
 .env
+firebase-service-account.json
 *.log
 www/
 android/app/build/

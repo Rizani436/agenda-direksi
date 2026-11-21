@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { q } from './db.js'
 import { mustLogin } from './auth.js'
 import { kirimPush } from './push.js'
+import { kirimFcm } from './fcm.js'
 
 const r = Router()
 
@@ -20,6 +21,7 @@ export async function kirimNotif(uid, agendaId, tipe, extra = {}) {
   const [[a]] = await q('SELECT * FROM agenda WHERE id=?', [agendaId])
   const [title, body] = TEKS[tipe](a, extra)
   await kirimPush(uid, title, body, '/#/agenda/' + agendaId)
+  await kirimFcm(uid, title, body, agendaId) // APK: FCM (WebView tidak dukung Push API browser)
 }
 
 r.get('/', mustLogin, async (req, res) => {

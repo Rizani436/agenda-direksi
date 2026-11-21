@@ -30,6 +30,14 @@ app.post('/api/push/subscribe', mustLogin, async (req, res) => {
 })
 app.get('/api/push/public-key', (req, res) => res.json({ key: pubKey() }))
 
+app.post('/api/push/fcm-token', mustLogin, async (req, res) => {
+  const { token } = req.body || {}
+  if (!token) return res.status(400).json({ error: 'token wajib' })
+  await q(`INSERT INTO device_tokens (user_id, token) VALUES (?,?)
+    ON DUPLICATE KEY UPDATE user_id=VALUES(user_id)`, [req.session.user.id, token])
+  res.json({ ok: true })
+})
+
 app.use('/api', auth)
 app.use('/api/users', users)
 app.use('/api/notifikasi', notif)

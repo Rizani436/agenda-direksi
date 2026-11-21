@@ -49,6 +49,15 @@ CREATE TABLE peserta_agenda (
   INDEX idx_user (user_id, status)
 ) ENGINE=InnoDB;
 
+CREATE TABLE device_tokens (
+  id        INT AUTO_INCREMENT PRIMARY KEY,
+  user_id   INT NOT NULL,
+  token     VARCHAR(255) NOT NULL,      -- FCM token (APK Capacitor)
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id),
+  UNIQUE KEY uq_token (token)
+) ENGINE=InnoDB;
+
 CREATE TABLE notifikasi (
   id        INT AUTO_INCREMENT PRIMARY KEY,
   user_id   INT NOT NULL,
