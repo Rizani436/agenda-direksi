@@ -1,0 +1,50 @@
+import crypto from 'crypto'
+import express from 'express'
+import session from 'express-session'
+import path from 'path'
+import { fileURLToPath } from 'url'
+import auth, { mustLogin } from './src/auth.js'
+import { q } from './src/db.js'
+import users from './src/users.js'
+import agenda from './src/agenda.js'
+import notif from './src/notif.js'
+import { pubKey } from './src/push.js'
+import { startCron } from './src/cron.js'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const app = express()
+app.use(express.json())
+app.use(session({
+  secret: crypto.randomBytes(32).toString('hex'), // ponytail: secret acak per boot (relogin saat restart), pakai env secret saat deploy
+  resave: false,
+  saveUninitialized: false,
+  cookie: { maxAge: 7 * 24 * 3600 * 1000, sameSite: 'lax' },
+}))
+
+app.post('/api/push/subscribe', mustLogin, async (req, res) => {
+  const { subscription } = req.body || {}
+  if (!subscription) return res.status(400).json({ error: 'subscription wajib' })
+  await q('UPDATE users SET push_token=?, push_gagal=FALSE WHERE id=?',
+    [JSON.stringify(subscription), req.session.user.id])
+  res.json({ ok: true })
+})
+app.get('/api/push/public-key', (req, res) => res.json({ key: pubKey() }))
+
+app.use('/api', auth)
+app.use('/api/users', users)
+app.use('/api/notifikasi', notif)
+app.use('/api/agenda', agenda)
+
+app.use(express.static(path.join(__dirname, 'public')))
+app.get(/^\/(?!api\/).*/, (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')))
+
+// error handler: pesan DB/validasi jangan bocor mentah
+app.use((err, req, res, next) => {
+  console.error(err)
+  res.status(500).json({ error: 'kesalahan server' })
+})
+
+startCron()
+app.listen(3000, () => console.log('Agenda Direksi: http://localhost:3000'))
+// jangan matikan server karena error async di route — log saja
+process.on('unhandledRejection', (err) => console.error('[unhandled]', err))

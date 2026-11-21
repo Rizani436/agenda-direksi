@@ -1,0 +1,11 @@
+{
+  "name": "Agenda Direksi",
+  "short_name": "Agenda",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F7F8F0",
+  "theme_color": "#355872",
+  "icons": [
+    { "src": "/icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
