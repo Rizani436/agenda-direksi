@@ -662,7 +662,9 @@ async function route() {
   } catch (err) { toast(err.message, true) }
 }
 window.addEventListener('hashchange', route)
-window.addEventListener('resize', () => { clearTimeout(route._t); route._t = setTimeout(route, 200) })
+// layout switch HANYA saat lewat breakpoint 768px — bukan tiap resize:
+// keyboard HP kebuka = viewport ngecil = resize palsu -> route() render ulang -> input hancur -> keyboard nutup sendiri
+matchMedia('(min-width: 768px)').addEventListener('change', route)
 ; (async () => {
   try { me = await api('/me'); unread = (await api('/notifikasi')).unread } catch (_) { me = null }
   route()
