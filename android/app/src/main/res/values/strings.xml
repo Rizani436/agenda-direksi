@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Siagen</string>
+    <string name="title_activity_main">Siagen</string>
+    <string name="package_name">online.nexusaniway.siagen</string>
+    <string name="custom_url_scheme">online.nexusaniway.siagen</string>
+</resources>

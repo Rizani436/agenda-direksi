@@ -1,0 +1,9 @@
+{
+  "appId": "online.nexusaniway.siagen",
+  "appName": "Siagen",
+  "webDir": "www",
+  "server": {
+    "url": "https://siagen.nexus-aniway.online/",
+    "androidScheme": "https"
+  }
+}
