@@ -1,4 +1,5 @@
 import crypto from 'crypto'
+import fs from 'fs'
 import express from 'express'
 import session from 'express-session'
 import path from 'path'
@@ -36,6 +37,14 @@ app.post('/api/push/fcm-token', mustLogin, async (req, res) => {
   await q(`INSERT INTO device_tokens (user_id, token) VALUES (?,?)
     ON DUPLICATE KEY UPDATE user_id=VALUES(user_id)`, [req.session.user.id, token])
   res.json({ ok: true })
+})
+
+// diagnosa FCM (sekper only): SA file + token terdaftar per user
+app.get('/api/push/diag', mustLogin, async (req, res) => {
+  if (req.session.user.role !== 'sekper') return res.status(403).json({ error: 'sekper only' })
+  const sa = fs.existsSync(process.env.FCM_SA_PATH || path.join(process.cwd(), 'firebase-service-account.json'))
+  const [rows] = await q('SELECT d.user_id, u.nama, COUNT(*) AS n FROM device_tokens d JOIN users u ON u.id=d.user_id GROUP BY d.user_id, u.nama')
+  res.json({ sa, tokens: rows })
 })
 
 app.use('/api', auth)

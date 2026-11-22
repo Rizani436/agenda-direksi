@@ -45,9 +45,9 @@ async function getToken() {
 export async function kirimFcm(userId, title, body, agendaId) {
   try {
     const s = saLoad()
-    if (!s) return
+    if (!s) { console.warn('[fcm] firebase-service-account.json tidak ada — lewati FCM'); return }
     const [rows] = await q('SELECT id, token FROM device_tokens WHERE user_id=?', [userId])
-    if (rows.length === 0) return
+    if (rows.length === 0) { console.log(`[fcm] user ${userId} tanpa device token — lewati FCM`); return }
     const token = await getToken()
     for (const row of rows) {
       const r = await fetch(`https://fcm.googleapis.com/v1/projects/${s.project_id}/messages:send`, {
@@ -62,9 +62,12 @@ export async function kirimFcm(userId, title, body, agendaId) {
       if (!r.ok) {
         const d = await r.json().catch(() => ({}))
         const msg = d.error?.message || ''
+        console.warn(`[fcm] kirim gagal HTTP ${r.status}: ${msg.slice(0, 200)}`)
         if (r.status === 404 || msg.includes('UNREGISTERED') || msg.includes('not a valid FCM'))
           await q('DELETE FROM device_tokens WHERE id=?', [row.id])
+      } else {
+        console.log(`[fcm] terkirim ke user ${userId}`)
       }
     }
-  } catch (_) { /* push best-effort */ }
+  } catch (e) { console.warn('[fcm] error:', e.message) }
 }
