@@ -62,21 +62,17 @@ const chipSt = (st) => {
   const map = {
     menunggu: ['wait', 'Menunggu jawaban'], hadir: ['hadir', 'Hadir'],
     tidak_hadir: ['alih', 'Mengalihkan'], ditolak: ['ditolak', 'Ditolak'],
-    draft: ['draft', 'Draft'], aktif: ['wait', 'Menunggu jawaban'],
-    mendatang: ['mendatang', 'Mendatang'], selesai: ['selesai', 'Selesai'], batal: ['ditolak', 'Batal'],
+    draft: ['draft', 'Draft'], dapat: ['hadir', 'Dapat dihadiri'],
+    selesai: ['selesai', 'Selesai'], batal: ['ditolak', 'Batal'],
   }
   const [cls, t] = map[st] || ['draft', st]
   return `<span class="chip ${cls}">${t}</span>`
 }
-// status agenda ikut waktu: sebelum jadwal = mendatang, lewat = selesai (bukan ikut konfirmasi)
-const stLabel = (a) => {
+// alur status agenda: menunggu jawaban -> dapat dihadiri (ada yg konfirmasi) -> selesai (lewat jadwal)
+const stLabel = (a, adaHadir = false) => {
   if (a.status === 'draft' || a.status === 'batal') return a.status
-  return new Date(`${a.tanggal}T${String(a.jam).slice(0, 5)}:00`) <= new Date() ? 'selesai' : 'mendatang'
-}
-const chipSaya = (a) => {
-  const st = stLabel(a)
-  if (st !== 'mendatang' || me?.role === 'sekper') return chipSt(st)
-  return chipSt(!a.status_saya || a.status_saya === 'hadir' ? 'mendatang' : a.status_saya)
+  if (new Date(`${a.tanggal}T${String(a.jam).slice(0, 5)}:00`) <= new Date()) return 'selesai'
+  return (adaHadir || a.n_hadir > 0) ? 'dapat' : 'menunggu'
 }
 
 // ---------- shell ----------
@@ -181,7 +177,7 @@ function rowAgenda(a, compact = false) {
         <div class="meta">${fmtD(a.tanggal)} · ${fmtT(a.jam)}${a.lokasi ? ' · ' + esc(a.lokasi) : ''}</div>
         ${!compact && pg ? `<div class="meta">Pemegang: ${esc(pg)}</div>` : ''}
       </div>
-      <div class="ag-side">${chipSaya(a)}<span class="chev">${svg('chevR', 16)}</span></div>
+      <div class="ag-side">${chipSt(stLabel(a))}<span class="chev">${svg('chevR', 16)}</span></div>
     </div></button>`
 }
 const emptyState = (judul, sub, buat = false) => `<div class="empty">
@@ -256,7 +252,7 @@ async function vDetail(id) {
 
   const metaCard = `<div class="card">
     <div class="meta-rows">
-      <div class="mrow">${svg('clock', 16)}<b>${fmtT(a.jam)} WIB</b><span style="margin-left:auto">${chipSt(stLabel(a))}</span></div>
+      <div class="mrow">${svg('clock', 16)}<b>${fmtT(a.jam)} WIB</b><span style="margin-left:auto">${chipSt(stLabel(a, konfir))}</span></div>
       <div class="mrow">${svg('cal', 16)}<span>${fmtDlong(a.tanggal)}</span></div>
       ${a.lokasi ? `<div class="mrow">${svg('pin', 16)}<span>${esc(a.lokasi)}</span></div>` : ''}
     </div>
@@ -416,7 +412,7 @@ async function vPengguna() {
 // ---------- views: responder ----------
 async function vBeranda() {
   const items = await api('/agenda?filter=semua')
-  const naik = items.filter(a => stLabel(a) === 'mendatang').sort((x, y) => (x.tanggal + x.jam).localeCompare(y.tanggal + y.jam))
+  const naik = items.filter(a => stLabel(a) !== 'selesai').sort((x, y) => (x.tanggal + x.jam).localeCompare(y.tanggal + y.jam))
   const hero = naik[0] || items[0]
   const mendatang = (naik.length ? naik.slice(1, 4) : items.slice(1, 4))
   const heroHtml = hero ? `<button class="hero" data-nav="#/agenda/${hero.id}">
@@ -425,7 +421,7 @@ async function vBeranda() {
       <div class="hero-t">${esc(hero.judul)}</div>
       <div class="mrow">${svg('clock', 15)}<span>${hari(hero.tanggal)} · ${fmtD(hero.tanggal)} · ${fmtT(hero.jam)} WIB</span></div>
       ${hero.lokasi ? `<div class="mrow">${svg('pin', 15)}<span>${esc(hero.lokasi)}</span></div>` : ''}
-      <div class="hero-chip">${hero.status_saya === 'hadir' ? 'Kehadiran tercatat' : hero.pemegang ? 'Menunggu jawaban Anda' : 'Agenda baru'}</div>
+      <div class="hero-chip">${hero.status_saya === 'hadir' ? 'Kehadiran tercatat' : hero.status_saya === 'menunggu' ? 'Menunggu jawaban Anda' : 'Dapat dihadiri'}</div>
     </div>
     <div class="hero-r"><div class="hero-h">${hero.tanggal === today() ? 'H' : 'H-' + Math.max(1, Math.round((new Date(hero.tanggal + 'T00:00:00') - new Date(today() + 'T00:00:00')) / 86400000))}</div>
     <span class="chev">${svg('chevR', 20)}</span></div>
