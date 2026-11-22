@@ -32,6 +32,20 @@ services:
     volumes:
       - ./firebase-service-account.json:/app/firebase-service-account.json:ro  # kredensial FCM (notif pop-up HP)
 
+  backup:
+    image: mariadb:11
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      TZ: Asia/Jakarta
+      DB_PASS: ${DB_PASS}
+    volumes:
+      - ./backups:/backups
+      - ./scripts/backup.sh:/backup.sh:ro
+    entrypoint: ["sh", "/backup.sh"]
+
   tunnel:
     image: cloudflare/cloudflared:latest
     restart: unless-stopped

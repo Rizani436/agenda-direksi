@@ -26,6 +26,7 @@ CREATE TABLE agenda (
   catatan     TEXT,
   dibuat_oleh INT NOT NULL,               -- users.id (harus role sekper)
   status      ENUM('draft','aktif','selesai','batal') DEFAULT 'draft', -- draft = belum dikirim, tanpa peserta, tanpa notif
+  pengingat_15 TINYINT(1) NOT NULL DEFAULT 0,  -- sudah dikirim pengingat 15 menit sebelum mulai?
   created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (dibuat_oleh) REFERENCES users(id),
   INDEX idx_tanggal (tanggal, status)
@@ -62,7 +63,7 @@ CREATE TABLE notifikasi (
   id        INT AUTO_INCREMENT PRIMARY KEY,
   user_id   INT NOT NULL,
   agenda_id INT NOT NULL,
-  tipe      ENUM('agenda_baru','alihan','h1','h','paksa','ditolak','pengingat') NOT NULL,
+  tipe      ENUM('agenda_baru','alihan','h1','h','paksa','ditolak','pengingat','pengingat15','batal') NOT NULL,
   dibaca    BOOLEAN DEFAULT FALSE,
   waktu     DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id)   REFERENCES users(id),

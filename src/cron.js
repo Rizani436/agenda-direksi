@@ -33,9 +33,39 @@ export async function selesaikanLewat() {
   return x.affectedRows || 0
 }
 
-export function startCron() {
+// pengingat 15 menit sebelum agenda mulai — sekali per agenda (kolom pengingat_15)
+export async function pengingat15() {
+  const [rows] = await q(`SELECT id, judul, jam, lokasi FROM agenda
+    WHERE status='aktif' AND pengingat_15=FALSE
+    AND CONCAT(tanggal,' ',jam) > NOW()
+    AND CONCAT(tanggal,' ',jam) <= NOW() + INTERVAL 15 MINUTE`)
+  let n = 0
+  for (const a of rows) {
+    const [ps] = await q('SELECT DISTINCT user_id FROM peserta_agenda WHERE agenda_id=?', [a.id])
+    for (const p of ps) await kirimNotif(p.user_id, a.id, 'pengingat15')
+    await q('UPDATE agenda SET pengingat_15=TRUE WHERE id=?', [a.id])
+    n++
+  }
+  return n
+}
+
+// migrasi idempotent untuk DB lama (jalankan tiap boot, aman diulang)
+async function migrasi() {
+  const alters = [
+    "ALTER TABLE notifikasi MODIFY tipe ENUM('agenda_baru','alihan','h1','h','paksa','ditolak','pengingat','pengingat15','batal') NOT NULL",
+    'ALTER TABLE agenda ADD COLUMN pengingat_15 TINYINT(1) NOT NULL DEFAULT 0',
+  ]
+  for (const s of alters) {
+    try { await q(s) } catch (e) { if (!/Duplicate column/i.test(e.message)) console.warn('[migrasi]', e.message) }
+  }
+}
+
+export async function startCron() {
+  await migrasi()
   selesaikanLewat().catch(console.error) // jalankan sekali saat boot
+  pengingat15().catch(console.error)
   cron.schedule('0 7 * * *', () => kirimHarian().catch(console.error), { timezone: 'Asia/Jakarta' })
   cron.schedule('0 17 * * *', () => nagSore().catch(console.error), { timezone: 'Asia/Jakarta' })
   cron.schedule('* * * * *', () => selesaikanLewat().catch(console.error), { timezone: 'Asia/Jakarta' })
+  cron.schedule('* * * * *', () => pengingat15().catch(console.error), { timezone: 'Asia/Jakarta' })
 }

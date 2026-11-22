@@ -15,6 +15,7 @@ const TEKS = {
   paksa: (a) => ['Titik paksa', `Sekper menetapkan Anda pemegang ${a.judul} — segera konfirmasi`],
   ditolak: (a, e) => ['Pengalihan ditolak', `${e.nama} menolak ${a.judul} · kembali ke Anda`],
   pengingat: (a) => ['Pengingat agenda', `${a.judul} · ${a.tanggal} ${String(a.jam).slice(0, 5)}${a.lokasi ? ' · ' + a.lokasi : ''}`],
+  pengingat15: (a) => ['Agenda 15 menit lagi', `${a.judul} — dimulai ${String(a.jam).slice(0, 5)}${a.lokasi ? ' · ' + a.lokasi : ''}`],
   batal: (a) => ['Agenda dibatalkan', `${a.judul} · ${a.tanggal} — agenda ini tidak dilaksanakan`],
 }
 

@@ -3,6 +3,7 @@ vapid.json
 .env
 firebase-service-account.json
 *.log
+backups/
 www/
 android/app/build/
 android/build/
