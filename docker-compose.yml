@@ -2,7 +2,9 @@ services:
   db:
     image: mariadb:11
     restart: unless-stopped
+    command: --default-time-zone=+07:00 # WIB — NOW() SQL dipakai untuk status selesai/melewat
     environment:
+      TZ: Asia/Jakarta
       MYSQL_ROOT_PASSWORD: ${DB_PASS}
       MYSQL_DATABASE: agenda_direksi
     volumes:
