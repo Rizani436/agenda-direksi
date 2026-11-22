@@ -49,7 +49,9 @@ r.get('/', mustLogin, async (req, res) => {
   if (u.role === 'sekper') {
     where = 'a.status IN (\'draft\',\'aktif\',\'selesai\')'
   } else {
-    where = `a.status='aktif' AND EXISTS(SELECT 1 FROM peserta_agenda px WHERE px.agenda_id=a.id AND px.user_id=?)`
+    // aktif selalu tampil; yang sudah disetujui (selesai) tetap tampil sampai H+1 (keesokan hari tanggal agenda)
+    where = `(a.status='aktif' OR (a.status='selesai' AND a.tanggal >= CURDATE() - INTERVAL 1 DAY))
+      AND EXISTS(SELECT 1 FROM peserta_agenda px WHERE px.agenda_id=a.id AND px.user_id=?)`
     wparams = [u.id]
   }
   if (filter === 'minggu') { where += ' AND a.tanggal BETWEEN CURDATE() AND CURDATE()+INTERVAL 6 DAY' }
