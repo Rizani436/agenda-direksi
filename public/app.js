@@ -747,10 +747,18 @@ async function setupPush() {
     if (PN) {
       const st = await PN.requestPermissions()
       if (!st.granted) return
+      try { // channel importance tinggi = notif muncul pop-up (heads-up) di layar, bukan cuma tray senyap
+        await PN.createChannel({ id: 'agenda', name: 'Agenda Direksi', description: 'Notifikasi agenda direksi',
+          importance: 5, visibility: 1, sound: 'default' })
+      } catch (_) { /* bukan Android (iOS tidak punya channel) */ }
       PN.addListener('registration', (t) =>
         api('/push/fcm-token', { method: 'POST', body: JSON.stringify({ token: t.value }) }).catch(() => {}))
       PN.addListener('pushNotificationReceived', async () => {
         try { unread = (await api('/notifikasi')).unread; route() } catch (_) { /* best-effort */ }
+      })
+      PN.addListener('pushNotificationActionPerformed', (n) => {
+        const id = n.notification?.data?.agendaId
+        if (id) location.hash = '#/agenda/' + id // tap notifikasi langsung buka detail agenda
       })
       PN.register()
       return

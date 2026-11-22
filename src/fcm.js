@@ -57,6 +57,7 @@ export async function kirimFcm(userId, title, body, agendaId) {
           token: row.token,
           notification: { title, body },
           data: { agendaId: String(agendaId ?? '') },
+          android: { priority: 'HIGH', notification: { channel_id: 'agenda' } }, // heads-up pop-up di layar lock
         } }),
       })
       if (!r.ok) {
