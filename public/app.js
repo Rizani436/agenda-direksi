@@ -285,7 +285,7 @@ async function vDetail(id) {
       ${a.lokasi ? `<div class="mrow">${svg('pin', 16)}<span>${esc(a.lokasi)}</span></div>` : ''}
     </div>
     <div class="divi"></div>
-    <div class="creator">Dibuat oleh ${esc(ch[0]?.nama || 'Sekper')}</div>
+    <div class="creator">Dibuat oleh ${esc(a.pembuat || 'Sekper')}</div>
     ${a.catatan ? `<div class="catatan">${esc(a.catatan)}</div>` : ''}
     ${isDesk() ? `<div class="divi"></div>
     <div class="label" style="margin-bottom:8px">${konfir ? 'Pemegang (Terkonfirmasi)' : 'Pemegang aktif'}</div>
