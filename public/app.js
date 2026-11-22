@@ -782,8 +782,9 @@ async function setupPush() {
     await probe('start platform=' + (window.Capacitor?.getPlatform?.() || 'web') + ' pn=' + (PN ? 'ada' : 'tidak-ada'))
     if (PN) {
       const st = await PN.requestPermissions()
-      await probe('perm=' + JSON.stringify(st?.notifications ?? st?.granted ?? st))
-      if (!st.granted) return
+      const ok = st?.granted === true || st?.receive === 'granted' // bentuk plugin: { receive: 'granted' }
+      await probe('perm=' + JSON.stringify(st?.notifications ?? st) + ' ok=' + ok)
+      if (!ok) return
       try { // channel importance tinggi = notif muncul pop-up (heads-up) di layar, bukan cuma tray senyap
         await PN.createChannel({ id: 'agenda', name: 'Agenda Direksi', description: 'Notifikasi agenda direksi',
           importance: 5, visibility: 1, sound: 'default' })
@@ -849,5 +850,5 @@ matchMedia('(min-width: 768px)').addEventListener('change', route)
   try { me = await api('/me'); unread = (await api('/notifikasi')).unread } catch (_) { me = null }
   route()
   if (me) setupPush() // re-register token FCM tiap buka app (token bisa ganti), bukan cuma saat login
-  if (window.Capacitor?.isNativePlatform?.()) api('/push/probe', { method: 'POST', body: JSON.stringify({ s: 'boot js=20261122d' }) }).catch(() => {})
+  if (window.Capacitor?.isNativePlatform?.()) api('/push/probe', { method: 'POST', body: JSON.stringify({ s: 'boot js=20261122e' }) }).catch(() => {})
 })()
