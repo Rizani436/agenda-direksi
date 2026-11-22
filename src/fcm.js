@@ -34,6 +34,7 @@ async function getToken() {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: 'grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=' + head + '.' + claims + '.' + sig,
+    signal: AbortSignal.timeout(15000), // jangan biarkan request menggantung tanpa batas
   })
   const d = await r.json()
   if (!d.access_token) throw new Error('fcm auth gagal: ' + JSON.stringify(d))
@@ -59,6 +60,7 @@ export async function kirimFcm(userId, title, body, agendaId) {
           data: { agendaId: String(agendaId ?? '') },
           android: { priority: 'HIGH', notification: { channel_id: 'agenda' } }, // heads-up pop-up di layar lock
         } }),
+        signal: AbortSignal.timeout(15000), // egress ke Google bisa diblok firewall — jangan menggantung selamanya
       })
       if (!r.ok) {
         const d = await r.json().catch(() => ({}))
