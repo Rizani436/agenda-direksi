@@ -54,6 +54,12 @@ r.get('/', mustLogin, async (req, res) => {
       AND EXISTS(SELECT 1 FROM peserta_agenda px WHERE px.agenda_id=a.id AND px.user_id=?)`
     wparams = [u.id]
   }
+  // riwayat: arsip selesai + batal tanpa batas H+1
+  if (filter === 'riwayat') {
+    where = u.role === 'sekper' ? `a.status IN ('selesai','batal')`
+      : `a.status IN ('selesai','batal') AND EXISTS(SELECT 1 FROM peserta_agenda px WHERE px.agenda_id=a.id AND px.user_id=?)`
+    wparams = u.role === 'sekper' ? [] : [u.id]
+  }
   if (filter === 'minggu') { where += ' AND a.tanggal BETWEEN CURDATE() AND CURDATE()+INTERVAL 6 DAY' }
   if (filter === 'bulan') { where += ' AND YEAR(a.tanggal)=YEAR(CURDATE()) AND MONTH(a.tanggal)=MONTH(CURDATE())' }
   let params = [u.id, ...wparams]
@@ -155,9 +161,16 @@ r.post('/hapus', mustLogin, sekperOnly, async (req, res) => {
   res.json({ ok: true, n: list.length })
 })
 
-// ---- batal (sekper) ----
+// ---- batal (sekper): beri tahu semua peserta agar tidak datang percuma ----
 r.post('/:id/batal', mustLogin, sekperOnly, async (req, res) => {
-  await q('UPDATE agenda SET status=\'batal\' WHERE id=?', [req.params.id])
+  const [[a]] = await q('SELECT id, status FROM agenda WHERE id=?', [req.params.id])
+  if (!a) return res.status(404).json({ error: 'agenda tidak ditemukan' })
+  if (a.status === 'batal') return res.json({ ok: true })
+  await q('UPDATE agenda SET status=\'batal\' WHERE id=?', [a.id])
+  if (a.status === 'aktif') { // draft belum terkirim, selesai tidak perlu pemberitahuan
+    const [rows] = await q('SELECT DISTINCT user_id FROM peserta_agenda WHERE agenda_id=?', [a.id])
+    for (const r of rows) await kirimNotif(r.user_id, a.id, 'batal')
+  }
   res.json({ ok: true })
 })
 

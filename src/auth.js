@@ -9,12 +9,26 @@ export const mustLogin = (req, res, next) =>
 export const sekperOnly = (req, res, next) =>
   req.session.user?.role === 'sekper' ? next() : res.status(403).json({ error: 'khusus sekretaris' })
 
+const gagal = new Map() // ponytail: rate limit login in-memory (reset saat restart); pindah DB saat multi-instance
+const MAX_GAGAL = 5, LOCK_MS = 15 * 60 * 1000
+
 r.post('/login', async (req, res) => {
   const { username, password } = req.body || {}
   if (!username || !password) return res.status(400).json({ error: 'username & password wajib' })
+  const key = String(username).toLowerCase()
+  const g = gagal.get(key)
+  if (g && g.count >= MAX_GAGAL && Date.now() < g.until)
+    return res.status(429).json({ error: 'terlalu banyak percobaan — coba lagi dalam 15 menit' })
   const [[u]] = await q('SELECT * FROM users WHERE username=?', [username])
-  if (!u || !(await bcrypt.compare(password, u.password_hash)))
+  if (!u || !(await bcrypt.compare(password, u.password_hash))) {
+    const rec = gagal.get(key) || { count: 0 }
+    rec.count++
+    rec.until = Date.now() + LOCK_MS
+    gagal.set(key, rec)
+    if (gagal.size > 1000) gagal.clear() // batasi memori dari spam username
     return res.status(401).json({ error: 'username atau password salah' })
+  }
+  gagal.delete(key)
   if (u.status === 'nonaktif') return res.status(403).json({ error: 'akun nonaktif' })
   req.session.user = { id: u.id, nama: u.nama, username: u.username, role: u.role, must_change: !!u.must_change }
   res.json(req.session.user)

@@ -31,9 +31,15 @@ r.post('/', async (req, res) => {
   }
 })
 r.put('/:id', async (req, res) => {
-  const { nama, role, status } = req.body || {}
+  const { nama, role, status, password } = req.body || {}
+  if (role && !['sekper', 'direksi', 'kadiv', 'kabak'].includes(role)) return res.status(400).json({ error: 'role tidak valid' })
+  if (password && password.length < 6) return res.status(400).json({ error: 'password minimal 6 karakter' })
   await q('UPDATE users SET nama=COALESCE(?,nama), role=COALESCE(?,role), status=COALESCE(?,status) WHERE id=?',
     [nama, role, status, req.params.id])
+  if (password) { // reset: password baru wajib diganti lagi saat login pertama
+    await q('UPDATE users SET password_hash=?, must_change=TRUE WHERE id=?',
+      [await bcrypt.hash(password, 10), req.params.id])
+  }
   res.json({ ok: true })
 })
 r.delete('/:id', async (req, res) => {

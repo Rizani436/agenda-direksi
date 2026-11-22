@@ -15,11 +15,12 @@ import { startCron } from './src/cron.js'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const app = express()
 app.use(express.json())
+app.set('trust proxy', 1) // deploy di belakang proxy https (siagen.nexus-aniway.online)
 app.use(session({
   secret: crypto.randomBytes(32).toString('hex'), // ponytail: secret acak per boot (relogin saat restart), pakai env secret saat deploy
   resave: false,
   saveUninitialized: false,
-  cookie: { maxAge: 7 * 24 * 3600 * 1000, sameSite: 'lax' },
+  cookie: { maxAge: 7 * 24 * 3600 * 1000, sameSite: 'lax', secure: 'auto' }, // secure aktif otomatis saat https, dev http aman
 }))
 
 app.post('/api/push/subscribe', mustLogin, async (req, res) => {
