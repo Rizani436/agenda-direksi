@@ -17,7 +17,7 @@ const app = express()
 app.use(express.json())
 app.set('trust proxy', 1) // deploy di belakang proxy https (siagen.nexus-aniway.online)
 app.use(session({
-  secret: crypto.randomBytes(32).toString('hex'), // ponytail: secret acak per boot (relogin saat restart), pakai env secret saat deploy
+  secret: process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex'), // secret stabil via env agar sesi tidak mati saat restart
   resave: false,
   saveUninitialized: false,
   cookie: { maxAge: 7 * 24 * 3600 * 1000, sameSite: 'lax', secure: 'auto' }, // secure aktif otomatis saat https, dev http aman

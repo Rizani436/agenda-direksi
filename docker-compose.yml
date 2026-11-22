@@ -1,0 +1,49 @@
+services:
+  db:
+    image: mariadb:11
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASS}
+      MYSQL_DATABASE: agenda_direksi
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_USER: root
+      DB_PASS: ${DB_PASS}
+      SESSION_SECRET: ${SESSION_SECRET}
+      # FCM_SA_PATH: /run/secrets/fcm_sa   # aktifkan kalau mount kredensial FCM (lihat di bawah)
+    ports:
+      - "127.0.0.1:3000:3000"
+    # volumes:
+    #   - ./firebase-service-account.json:/app/firebase-service-account.json:ro  # mount kredensial FCM
+    # secrets:
+    #   - fcm_sa
+
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run --token ${TUNNEL_TOKEN}
+    depends_on:
+      - app
+    extra_hosts:
+      - "host.docker.internal:host-gateway"  # kalau hostname di dashboard Cloudflare menunjuk http://host.docker.internal:3000
+
+volumes:
+  db_data:
+
+# secrets:
+#   fcm_sa:
+#     file: ./firebase-service-account.json

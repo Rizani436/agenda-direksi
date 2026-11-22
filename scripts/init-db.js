@@ -3,10 +3,14 @@ import path from 'path'
 import mysql from 'mysql2/promise'
 import bcrypt from 'bcryptjs'
 
-const conn = await mysql.createConnection({ host: '127.0.0.1', user: 'root', password: '', multipleStatements: true })
-await conn.query('DROP DATABASE IF EXISTS agenda_direksi')
-await conn.query('CREATE DATABASE agenda_direksi CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci')
-await conn.changeUser({ database: 'agenda_direksi' })
+const DB_HOST = process.env.DB_HOST || '127.0.0.1'
+const DB_USER = process.env.DB_USER || 'root'
+const DB_PASS = process.env.DB_PASS || ''
+const DB_NAME = process.env.DB_NAME || 'agenda_direksi'
+const conn = await mysql.createConnection({ host: DB_HOST, user: DB_USER, password: DB_PASS, multipleStatements: true })
+await conn.query(`DROP DATABASE IF EXISTS ${DB_NAME}`)
+await conn.query(`CREATE DATABASE ${DB_NAME} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`)
+await conn.changeUser({ database: DB_NAME })
 await conn.query(fs.readFileSync(path.join(process.cwd(), 'db/schema.sql'), 'utf8'))
 
 const users = [
