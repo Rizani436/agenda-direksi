@@ -509,6 +509,8 @@ function vProfil() {
     <button class="pm-item" data-nav="#/ganti-password">${svg('key', 18)}<span class="pm-t">Ubah Password</span><span class="pm-chev">${svg('chevR', 16)}</span></button>
     <div class="divi"></div>
     <button class="pm-item" data-nav="#/notifikasi">${svg('bell', 18)}<span class="pm-t">Notifikasi</span>${unread ? `<span class="badge" style="position:static;margin-left:auto;margin-right:8px">${unread}</span>` : ''}<span class="pm-chev">${svg('chevR', 16)}</span></button>
+    <div class="divi"></div>
+    <button class="pm-item" data-act="boost-device">${svg('info', 18)}<span class="pm-t">Baterai &amp; autostart (agar notif selalu muncul)</span><span class="pm-chev">${svg('chevR', 16)}</span></button>
   </div>
   <div class="card prof-menu">
     <button class="pm-item danger" data-act="logout">${svg('out', 18)}<span class="pm-t">Keluar</span></button>
@@ -622,6 +624,7 @@ document.addEventListener('click', async (e) => {
     }
     else if (act === 'baca-semua') { await api('/notifikasi/baca-semua', { method: 'POST' }); route() }
     else if (act === 'tambah-user') $('#form-user').hidden = !$('#form-user').hidden
+    else if (act === 'boost-device') boostDevice()
     else if (act === 'edit-user') modalEditUser(id)
     else if (act === 'cetak') {
       const d = await api('/agenda/' + id)
@@ -705,6 +708,7 @@ document.addEventListener('submit', async (e) => {
       me = await api('/login', { method: 'POST', body: JSON.stringify(Object.fromEntries(new FormData(f))) })
       location.hash = me.must_change ? '#/ganti-password' : '#/'
       setupPush()
+      if (!me.must_change) boostOnce()
     } else if (kind === 'ganti-password') {
       await api('/change-password', { method: 'POST', body: JSON.stringify(Object.fromEntries(new FormData(f))) })
       me.must_change = false
@@ -740,6 +744,15 @@ document.addEventListener('submit', async (e) => {
 })
 
 // ---------- push ----------
+// dorong user aktifkan autostart + abaikan optimasi baterai (Android tidak boleh diam-diam, dialog dibuka sekali)
+const boostDevice = async () => {
+  const B = window.Capacitor?.Plugins?.DeviceBoost
+  if (!B || window.Capacitor?.getPlatform?.() !== 'android') return
+  try { await B.requestIgnoreBattery() } catch (_) {}
+  try { await B.openAutostart() } catch (_) {}
+}
+const boostOnce = () => { if (!localStorage.getItem('boost-done')) { localStorage.setItem('boost-done', '1'); boostDevice() } }
+
 async function setupPush() {
   try {
     // APK Capacitor: FCM via plugin native (Push API browser tidak jalan di WebView)
@@ -806,5 +819,5 @@ matchMedia('(min-width: 768px)').addEventListener('change', route)
 ; (async () => {
   try { me = await api('/me'); unread = (await api('/notifikasi')).unread } catch (_) { me = null }
   route()
-  if (me) setupPush() // re-register token FCM tiap buka app (token bisa ganti), bukan cuma saat login
+  if (me) { setupPush(); boostOnce() } // re-register token FCM tiap buka app (token bisa ganti), bukan cuma saat login
 })()
