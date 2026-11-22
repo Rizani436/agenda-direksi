@@ -40,7 +40,7 @@ public class DeviceBoostPlugin extends Plugin {
     for (String[] t : oem) {
       try {
         Intent i = new Intent().setClassName(t[0], t[1]).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        startActivity(i);
+        getActivity().startActivity(i);
         call.resolve();
         return;
       } catch (Exception ignored) {}
@@ -48,7 +48,7 @@ public class DeviceBoostPlugin extends Plugin {
     try { // fallback: halaman info app di Settings
       Intent i = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
         Uri.parse("package:" + getContext().getPackageName())).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-      startActivity(i);
+      getActivity().startActivity(i);
     } catch (Exception ignored) {}
     call.resolve();
   }
