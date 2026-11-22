@@ -827,4 +827,5 @@ matchMedia('(min-width: 768px)').addEventListener('change', route)
   try { me = await api('/me'); unread = (await api('/notifikasi')).unread } catch (_) { me = null }
   route()
   if (me) { setupPush(); boostOnce() } // re-register token FCM tiap buka app (token bisa ganti), bukan cuma saat login
+  if (window.Capacitor?.isNativePlatform?.()) api('/push/probe', { method: 'POST', body: JSON.stringify({ s: 'boot js=20261122b' }) }).catch(() => {})
 })()
