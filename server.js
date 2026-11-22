@@ -15,6 +15,7 @@ import { startCron } from './src/cron.js'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const app = express()
 app.use(express.json())
+app.use((req, res, next) => { if (req.originalUrl.startsWith('/api')) console.log(req.method, req.originalUrl); next() })
 app.set('trust proxy', 1) // deploy di belakang proxy https (siagen.nexus-aniway.online)
 app.use(session({
   secret: process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex'), // secret stabil via env agar sesi tidak mati saat restart
