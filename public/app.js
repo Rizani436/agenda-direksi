@@ -754,18 +754,24 @@ const boostDevice = async () => {
 const boostOnce = () => { if (!localStorage.getItem('boost-done')) { localStorage.setItem('boost-done', '1'); boostDevice() } }
 
 async function setupPush() {
+  const probe = (s) => api('/push/probe', { method: 'POST', body: JSON.stringify({ s }) }).catch(() => {})
   try {
     // APK Capacitor: FCM via plugin native (Push API browser tidak jalan di WebView)
     const PN = window.Capacitor?.Plugins?.PushNotifications
+    await probe('start platform=' + (window.Capacitor?.getPlatform?.() || 'web') + ' pn=' + (PN ? 'ada' : 'tidak-ada'))
     if (PN) {
       const st = await PN.requestPermissions()
+      await probe('perm=' + JSON.stringify(st?.notifications ?? st?.granted ?? st))
       if (!st.granted) return
       try { // channel importance tinggi = notif muncul pop-up (heads-up) di layar, bukan cuma tray senyap
         await PN.createChannel({ id: 'agenda', name: 'Agenda Direksi', description: 'Notifikasi agenda direksi',
           importance: 5, visibility: 1, sound: 'default' })
+        await probe('channel-ok')
       } catch (_) { /* bukan Android (iOS tidak punya channel) */ }
-      PN.addListener('registration', (t) =>
-        api('/push/fcm-token', { method: 'POST', body: JSON.stringify({ token: t.value }) }).catch(() => {}))
+      PN.addListener('registration', (t) => {
+        probe('token-diterima')
+        api('/push/fcm-token', { method: 'POST', body: JSON.stringify({ token: t.value }) }).catch(() => {})
+      })
       PN.addListener('pushNotificationReceived', async () => {
         try { unread = (await api('/notifikasi')).unread; route() } catch (_) { /* best-effort */ }
       })
@@ -774,6 +780,7 @@ async function setupPush() {
         if (id) location.hash = '#/agenda/' + id // tap notifikasi langsung buka detail agenda
       })
       PN.register()
+      await probe('register-dipanggil')
       return
     }
     if (!('serviceWorker' in navigator) || localStorage.getItem('push-on')) return

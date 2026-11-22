@@ -33,6 +33,8 @@ app.post('/api/push/subscribe', mustLogin, async (req, res) => {
 })
 app.get('/api/push/public-key', (req, res) => res.json({ key: pubKey() }))
 
+app.post('/api/push/probe', (req, res) => { console.log('[probe]', JSON.stringify(req.body || {})); res.json({ ok: true }) })
+
 app.post('/api/push/fcm-token', mustLogin, async (req, res) => {
   const { token } = req.body || {}
   if (!token) return res.status(400).json({ error: 'token wajib' })
