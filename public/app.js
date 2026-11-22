@@ -56,6 +56,8 @@ const IC = {
   out: 'M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h8v-2H4z',
   info: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 15h-2v-6h2zm0-8h-2V7h2z',
   print: 'M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-3-7H8v5h8V5z',
+  eye: 'M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z',
+  eyeOff: 'M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46-.46C3.08 8.3 1.78 10.03 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.59.16-1.22.28-1.87.28-2.76 0-5-2.24-5-5 0-.44.08-.86.2-1.26z',
 }
 const svg = (k, s = 18) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}"><path d="${IC[k]}"/></svg>`
 
@@ -117,7 +119,7 @@ function vLogin() {
     </div>
     <form data-form="login" class="auth-body">
       <div class="field"><label class="label">Username</label><input name="username" autocomplete="username" required placeholder="username Anda"></div>
-      <div class="field"><label class="label">Password</label><input name="password" type="password" autocomplete="current-password" required placeholder="••••••••"></div>
+      <div class="field"><label class="label">Password</label><div class="pwd-wrap"><input id="pwd-login" name="password" type="password" autocomplete="current-password" required placeholder="••••••••"><button type="button" class="pwd-eye" data-eye="pwd-login" aria-label="Lihat password">${svg('eye', 20)}</button></div></div>
       <button class="btn btn-block">Masuk</button>
     </form></div>`
 }
@@ -578,6 +580,15 @@ document.addEventListener('click', async (e) => {
     location.hash = nav.dataset.nav
     return
   }
+  const eyeBtn = e.target.closest('[data-eye]')
+  if (eyeBtn) {
+    const inp = document.getElementById(eyeBtn.dataset.eye)
+    if (inp) {
+      const lihat = inp.type === 'password'
+      inp.type = lihat ? 'text' : 'password'
+      eyeBtn.innerHTML = svg(lihat ? 'eyeOff' : 'eye', 20)
+    }
+  }
   const el = e.target.closest('[data-act]')
   if (!el) return
   const { act, id, v, agenda: agId } = el.dataset
@@ -625,6 +636,7 @@ document.addEventListener('click', async (e) => {
     else if (act === 'baca-semua') { await api('/notifikasi/baca-semua', { method: 'POST' }); route() }
     else if (act === 'tambah-user') $('#form-user').hidden = !$('#form-user').hidden
     else if (act === 'boost-device') boostDevice()
+    else if (act === 'boost-ya') { el.closest('.modal-bg').remove(); boostDevice() }
     else if (act === 'edit-user') modalEditUser(id)
     else if (act === 'cetak') {
       const d = await api('/agenda/' + id)
@@ -751,7 +763,17 @@ const boostDevice = async () => {
   try { await B.requestIgnoreBattery() } catch (_) {}
   try { await B.openAutostart() } catch (_) {}
 }
-const boostOnce = () => { if (!localStorage.getItem('boost-done')) { localStorage.setItem('boost-done', '1'); boostDevice() } }
+// jangan buka pengaturan otomatis — tampilkan pop-up konfirmasi dulu, baru arahkan kalau user setuju
+const boostOnce = () => {
+  if (localStorage.getItem('boost-done')) return
+  localStorage.setItem('boost-done', '1')
+  modal(`<h2>Aktifkan pengaturan notifikasi?</h2>
+    <p style="color:var(--ink6);margin-bottom:16px">Agar notifikasi selalu muncul pop-up di layar saat HP tidak dipakai, izinkan app mengabaikan optimasi baterai dan nyalakan autostart di layar berikutnya.</p>
+    <div style="display:flex;gap:12px">
+      <button type="button" class="btn outline" style="flex:1" data-act="tutup-modal">Nanti</button>
+      <button type="button" class="btn" style="flex:1" data-act="boost-ya">Buka pengaturan</button>
+    </div>`)
+}
 
 async function setupPush() {
   const probe = (s) => api('/push/probe', { method: 'POST', body: JSON.stringify({ s }) }).catch(() => {})
@@ -827,5 +849,5 @@ matchMedia('(min-width: 768px)').addEventListener('change', route)
   try { me = await api('/me'); unread = (await api('/notifikasi')).unread } catch (_) { me = null }
   route()
   if (me) { setupPush(); boostOnce() } // re-register token FCM tiap buka app (token bisa ganti), bukan cuma saat login
-  if (window.Capacitor?.isNativePlatform?.()) api('/push/probe', { method: 'POST', body: JSON.stringify({ s: 'boot js=20261122b' }) }).catch(() => {})
+  if (window.Capacitor?.isNativePlatform?.()) api('/push/probe', { method: 'POST', body: JSON.stringify({ s: 'boot js=20261122c' }) }).catch(() => {})
 })()

@@ -53,6 +53,16 @@ textarea { resize: vertical; }
 .avatar.xl { width: 72px; height: 72px; font-size: 22px; }
 .main { flex: 1; padding: 24px; max-width: 1200px; }
 
+/* lihat password (login) */
+.pwd-wrap { position: relative; }
+.pwd-wrap input { width: 100%; padding-right: 44px; }
+.pwd-eye {
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; padding: 4px; cursor: pointer; color: var(--ink6, #888);
+  display: flex; align-items: center;
+}
+.pwd-eye svg { fill: currentColor; }
+
 /* ---- buttons ---- */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
