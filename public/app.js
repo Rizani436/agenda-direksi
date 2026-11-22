@@ -720,7 +720,6 @@ document.addEventListener('submit', async (e) => {
       me = await api('/login', { method: 'POST', body: JSON.stringify(Object.fromEntries(new FormData(f))) })
       location.hash = me.must_change ? '#/ganti-password' : '#/'
       setupPush()
-      if (!me.must_change) boostOnce()
     } else if (kind === 'ganti-password') {
       await api('/change-password', { method: 'POST', body: JSON.stringify(Object.fromEntries(new FormData(f))) })
       me.must_change = false
@@ -760,8 +759,8 @@ document.addEventListener('submit', async (e) => {
 const boostDevice = async () => {
   const B = window.Capacitor?.Plugins?.DeviceBoost
   if (!B || window.Capacitor?.getPlatform?.() !== 'android') return
-  try { await B.requestIgnoreBattery() } catch (_) {}
-  try { await B.openAutostart() } catch (_) {}
+  try { await B.openAutostart() } catch (_) {} // 1) layar autostart (latar belakang) OEM
+  try { await B.requestIgnoreBattery() } catch (_) {} // 2) dialog abaikan optimasi baterai
 }
 // jangan buka pengaturan otomatis — tampilkan pop-up konfirmasi dulu, baru arahkan kalau user setuju
 const boostOnce = () => {
@@ -803,6 +802,7 @@ async function setupPush() {
       })
       PN.register()
       await probe('register-dipanggil')
+      setTimeout(boostOnce, 800) // setelah dialog izin notifikasi selesai → pop-up konfirmasi autostart/baterai
       return
     }
     if (!('serviceWorker' in navigator) || localStorage.getItem('push-on')) return
@@ -848,6 +848,6 @@ matchMedia('(min-width: 768px)').addEventListener('change', route)
 ; (async () => {
   try { me = await api('/me'); unread = (await api('/notifikasi')).unread } catch (_) { me = null }
   route()
-  if (me) { setupPush(); boostOnce() } // re-register token FCM tiap buka app (token bisa ganti), bukan cuma saat login
-  if (window.Capacitor?.isNativePlatform?.()) api('/push/probe', { method: 'POST', body: JSON.stringify({ s: 'boot js=20261122c' }) }).catch(() => {})
+  if (me) setupPush() // re-register token FCM tiap buka app (token bisa ganti), bukan cuma saat login
+  if (window.Capacitor?.isNativePlatform?.()) api('/push/probe', { method: 'POST', body: JSON.stringify({ s: 'boot js=20261122d' }) }).catch(() => {})
 })()
