@@ -35,9 +35,15 @@ app.get('/api/push/public-key', (req, res) => res.json({ key: pubKey() }))
 app.post('/api/push/fcm-token', mustLogin, async (req, res) => {
   const { token } = req.body || {}
   if (!token) return res.status(400).json({ error: 'token wajib' })
-  await q(`INSERT INTO device_tokens (user_id, token) VALUES (?,?)
-    ON DUPLICATE KEY UPDATE user_id=VALUES(user_id)`, [req.session.user.id, token])
-  res.json({ ok: true })
+  try {
+    await q(`INSERT INTO device_tokens (user_id, token) VALUES (?,?)
+      ON DUPLICATE KEY UPDATE user_id=VALUES(user_id)`, [req.session.user.id, token])
+    console.log(`[fcm-token] user ${req.session.user.id} (${req.session.user.username}) → tersimpan ${String(token).slice(0, 16)}…`)
+    res.json({ ok: true })
+  } catch (e) {
+    console.log('[fcm-token] gagal simpan:', e.message)
+    res.status(500).json({ error: 'gagal simpan token' })
+  }
 })
 
 // diagnosa FCM (sekper only): SA file + token terdaftar per user
