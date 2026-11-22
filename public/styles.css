@@ -311,7 +311,7 @@ td .td-none { color: var(--ink4); font-size: 12px; }
 .note-bar svg { fill: currentColor; flex: none; }
 
 /* auth */
-.auth { min-height: 100vh; display: flex; flex-direction: column; }
+.auth { min-height: 100vh; display: flex; flex-direction: column; padding-top: env(safe-area-inset-top, 0px); }
 .auth-hero { background: var(--ink); color: #fff; padding: 56px 24px 48px; }
 .logo {
   width: 36px; height: 36px; border-radius: 50%; background: var(--pri);
@@ -387,7 +387,7 @@ td .td-none { color: var(--ink4); font-size: 12px; }
 @media (max-width: 768px) {
   .shell { display: block; }
   .sidebar { display: none; }
-  .mwrap { padding: 20px 24px calc(90px + env(safe-area-inset-bottom)); max-width: 480px; margin: 0 auto; }
+  .mwrap { padding: calc(20px + env(safe-area-inset-top, 0px)) 24px calc(90px + env(safe-area-inset-bottom, 0px)); max-width: 480px; margin: 0 auto; }
   .bottom-nav {
     position: fixed; bottom: 0; left: 0; right: 0; height: calc(76px + env(safe-area-inset-bottom));
     padding-bottom: env(safe-area-inset-bottom); background: var(--surface); border-top: 1px solid var(--line);
