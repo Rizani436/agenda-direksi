@@ -470,9 +470,9 @@ async function vNotifikasi() {
   const { items, unread: n } = await api('/notifikasi')
   unread = n
   const segs = [['semua', 'Semua'], ['agenda', 'Agenda'], ['pengalihan', 'Pengalihan']]
-  const tipeGrp = { agenda_baru: 'agenda', h1: 'agenda', h: 'agenda', batal: 'agenda', alihan: 'pengalihan', paksa: 'pengalihan', ditolak: 'pengalihan' }
+  const tipeGrp = { agenda_baru: 'agenda', h1: 'agenda', h: 'agenda', batal: 'agenda', pengingat: 'agenda', alihan: 'pengalihan', paksa: 'pengalihan', ditolak: 'pengalihan' }
   const tampil = items.filter(x => notifSeg === 'semua' || tipeGrp[x.tipe] === notifSeg)
-  const icon = { agenda_baru: 'cal', alihan: 'send', h1: 'clock', h: 'clock', paksa: 'info', ditolak: 'back', batal: 'info' }
+  const icon = { agenda_baru: 'cal', alihan: 'send', h1: 'clock', h: 'clock', paksa: 'info', ditolak: 'back', batal: 'info', pengingat: 'bell' }
   let lastDay = ''
   const rows = tampil.map(x => {
     const day = x.waktu.slice(0, 10)
@@ -483,7 +483,7 @@ async function vNotifikasi() {
     lastDay = lbl
     return g + `<button class="notif ${x.dibaca ? '' : 'unread'}" data-act="buka-notif" data-id="${x.id}" data-agenda="${x.agenda_id}">
       <span class="n-ico">${svg(icon[x.tipe] || 'bell', 18)}</span>
-      <span class="n-txt"><span class="n-t">${{ agenda_baru: 'Agenda baru', alihan: 'Pengalihan agenda', h1: 'Pengingat H-1', h: 'Hari ini', paksa: 'Titik paksa', ditolak: 'Pengalihan ditolak', batal: 'Agenda dibatalkan' }[x.tipe]}</span>
+      <span class="n-txt"><span class="n-t">${{ agenda_baru: 'Agenda baru', alihan: 'Pengalihan agenda', h1: 'Pengingat H-1', h: 'Hari ini', paksa: 'Titik paksa', ditolak: 'Pengalihan ditolak', batal: 'Agenda dibatalkan', pengingat: 'Pengingat agenda' }[x.tipe]}</span>
       <span class="n-s">${esc(x.judul)}</span></span>
       <span class="n-w">${x.waktu.slice(11, 16)}</span>
       ${x.dibaca ? '' : '<span class="n-dot"></span>'}
