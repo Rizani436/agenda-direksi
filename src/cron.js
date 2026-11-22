@@ -24,7 +24,18 @@ export async function nagSore() {
   return { nag: rows.length }
 }
 
+// flip aktif<->selesai otomatis sesuai jadwal (status ikut waktu, bukan konfirmasi)
+export async function selesaikanLewat() {
+  await q(`UPDATE agenda SET status='aktif'
+    WHERE status='selesai' AND CONCAT(tanggal,' ',jam) > NOW()`)
+  const [x] = await q(`UPDATE agenda SET status='selesai'
+    WHERE status='aktif' AND CONCAT(tanggal,' ',jam) <= NOW()`)
+  return x.affectedRows || 0
+}
+
 export function startCron() {
+  selesaikanLewat().catch(console.error) // jalankan sekali saat boot
   cron.schedule('0 7 * * *', () => kirimHarian().catch(console.error), { timezone: 'Asia/Jakarta' })
   cron.schedule('0 17 * * *', () => nagSore().catch(console.error), { timezone: 'Asia/Jakarta' })
+  cron.schedule('* * * * *', () => selesaikanLewat().catch(console.error), { timezone: 'Asia/Jakarta' })
 }

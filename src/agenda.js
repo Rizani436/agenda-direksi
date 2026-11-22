@@ -61,6 +61,9 @@ r.get('/', mustLogin, async (req, res) => {
     (SELECT p.status FROM peserta_agenda p WHERE p.agenda_id=a.id AND p.user_id=? ORDER BY p.id DESC LIMIT 1) AS status_saya,
     (SELECT pu.nama FROM peserta_agenda p JOIN users pu ON pu.id=p.user_id
       WHERE p.agenda_id=a.id AND p.status='menunggu' ORDER BY p.id DESC LIMIT 1) AS pemegang,
+    (SELECT pu.nama FROM peserta_agenda p JOIN users pu ON pu.id=p.user_id
+      WHERE p.agenda_id=a.id AND p.status='hadir' ORDER BY p.id DESC LIMIT 1) AS terkonfirmasi,
+    (SELECT COUNT(*) FROM peserta_agenda p WHERE p.agenda_id=a.id AND p.status='hadir') AS n_hadir,
     (SELECT COUNT(*) FROM peserta_agenda p WHERE p.agenda_id=a.id AND p.status='tidak_hadir') AS n_alih
     FROM agenda a JOIN users u ON u.id=a.dibuat_oleh WHERE ${where}`
   if (term) { sql += ' AND a.judul LIKE ?'; params.push('%' + term + '%') }
@@ -193,8 +196,7 @@ async function myRow(req, res) {
 r.post('/peserta/:id/hadir', mustLogin, async (req, res) => {
   const p = await myRow(req, res); if (!p) return
   await q('UPDATE peserta_agenda SET status=\'hadir\', waktu_respon=NOW() WHERE id=?', [p.id])
-  // ada yang hadir → rantai selesai (spec §3)
-  await q('UPDATE agenda SET status=\'selesai\' WHERE id=? AND status=\'aktif\'', [p.agenda_id])
+  // status agenda tetap 'aktif': label "Mendatang/Selesai" diturunkan dari waktu (cron flip aktif->selesai saat lewat)
   res.json({ ok: true })
 })
 r.post('/peserta/:id/alih', mustLogin, async (req, res) => {

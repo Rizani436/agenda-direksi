@@ -102,7 +102,7 @@ textarea { resize: vertical; }
   display: inline-flex; align-items: center; padding: 0 12px; height: 28px;
   border-radius: 14px; font-size: 10px; font-weight: bold; white-space: nowrap;
 }
-.chip.wait { background: var(--sky-tint); color: var(--pri); }
+.chip.wait, .chip.mendatang { background: var(--sky-tint); color: var(--pri); }
 .chip.hadir { background: var(--green-tint); color: var(--green); }
 .chip.alih { background: var(--pri); color: #fff; }
 .chip.draft { background: var(--draft); color: var(--ink6); }

@@ -31,7 +31,7 @@ const main = async () => {
   ok(lg.status === 200 && lg.body.role === 'sekper', 'login sekper')
 
   // 2. buat draft + kirim ke andi (id 2)
-  const cr = await c('/agenda', { method: 'POST', body: JSON.stringify({ judul: 'TEST Rantai', tanggal: '2026-07-01', jam: '09:00', lokasi: 'Test', catatan: '', peserta: [2], kirim: false }) })
+  const cr = await c('/agenda', { method: 'POST', body: JSON.stringify({ judul: 'TEST Rantai', tanggal: '2099-07-01', jam: '09:00', lokasi: 'Test', catatan: '', peserta: [2], kirim: false }) })
   ok(cr.status === 200, 'buat draft')
   const id = cr.body.id
   const kr = await c(`/agenda/${id}/kirim`, { method: 'POST', body: JSON.stringify({ peserta: [2] }) })
@@ -78,6 +78,16 @@ const main = async () => {
   ok(pk.status === 200, 'paksa titik ke dewi')
   const det4 = await cs(`/agenda/${id}`)
   ok(det4.body.pemegang && det4.body.pemegang.nama === 'Dewi Lestari', 'pemegang = Dewi setelah paksa')
+
+  // 8b. dewi klik hadir -> terkonfirmasi = Dewi Lestari, status agenda tetap aktif (mendatang) sebelum jadwal lewat
+  const cd = client()
+  await cd('/login', { method: 'POST', body: JSON.stringify({ username: 'dewi', password: 'dewi' }) })
+  const dewiNode = det4.body.chain.find((n) => n.user_id === 6)
+  const hd = await cd(`/agenda/peserta/${dewiNode.id}/hadir`, { method: 'POST' })
+  ok(hd.status === 200, 'dewi klik hadir')
+  const ls = await cs('/agenda')
+  const row = ls.body.find((x) => x.id === id)
+  ok(row && row.terkonfirmasi === 'Dewi Lestari' && row.status === 'aktif', 'pemegang terkonfirmasi tetap tampil & status belum selesai sebelum jadwal')
 
   // 9. cleanup: batal agenda test
   const bl = await cs(`/agenda/${id}/batal`, { method: 'POST' })

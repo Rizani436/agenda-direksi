@@ -63,12 +63,21 @@ const chipSt = (st) => {
     menunggu: ['wait', 'Menunggu jawaban'], hadir: ['hadir', 'Hadir'],
     tidak_hadir: ['alih', 'Mengalihkan'], ditolak: ['ditolak', 'Ditolak'],
     draft: ['draft', 'Draft'], aktif: ['wait', 'Menunggu jawaban'],
-    selesai: ['selesai', 'Selesai'], batal: ['ditolak', 'Batal'],
+    mendatang: ['mendatang', 'Mendatang'], selesai: ['selesai', 'Selesai'], batal: ['ditolak', 'Batal'],
   }
   const [cls, t] = map[st] || ['draft', st]
   return `<span class="chip ${cls}">${t}</span>`
 }
-const chipSaya = (a) => a.status === 'draft' ? chipSt('draft') : a.pemegang ? chipSt(a.status_saya || 'menunggu') : chipSt(a.status)
+// status agenda ikut waktu: sebelum jadwal = mendatang, lewat = selesai (bukan ikut konfirmasi)
+const stLabel = (a) => {
+  if (a.status === 'draft' || a.status === 'batal') return a.status
+  return new Date(`${a.tanggal}T${String(a.jam).slice(0, 5)}:00`) <= new Date() ? 'selesai' : 'mendatang'
+}
+const chipSaya = (a) => {
+  const st = stLabel(a)
+  if (st !== 'mendatang' || me?.role === 'sekper') return chipSt(st)
+  return chipSt(!a.status_saya || a.status_saya === 'hadir' ? 'mendatang' : a.status_saya)
+}
 
 // ---------- shell ----------
 const isDesk = () => window.matchMedia('(min-width: 768px)').matches && me.role === 'sekper'
@@ -136,7 +145,7 @@ async function vDashboard() {
   const menunggu = items.filter(a => a.status === 'aktif' && a.pemegang).length
   const draft = items.filter(a => a.status === 'draft').length
   const recent = items.slice(0, 5)
-  const terk = items.filter(a => a.status === 'selesai').length
+  const terk = items.filter(a => a.n_hadir > 0).length
   const alih = items.filter(a => a.n_alih > 0).length
   const stats = [[aktif, 'Agenda aktif'], [menunggu, 'Menunggu jawaban'], [terk, 'Terkonfirmasi'], [alih, 'Dialihkan']]
   const list = recent.length ? recent.map(a => rowAgenda(a, true)).join('')
@@ -147,8 +156,10 @@ async function vDashboard() {
       <td class="td-chk"><input type="checkbox" class="sel-ag" value="${a.id}"></td>
       <td><div class="td-t">${esc(a.judul)}</div><div class="td-m">${esc(a.lokasi || 'TBD')}</div></td>
       <td class="td-m">${fmtD(a.tanggal)} · ${fmtT(a.jam)}</td>
-      <td>${a.pemegang ? `<div class="td-pg">${avatarEl(a.pemegang, 'sm')}<span class="td-m">${esc(a.pemegang)}</span></div>` : '<span class="td-none">—</span>'}</td>
-      <td>${chipSt(a.status)}</td>
+      <td>${a.pemegang ? `<div class="td-pg">${avatarEl(a.pemegang, 'sm')}<span class="td-m">${esc(a.pemegang)}</span></div>`
+        : a.terkonfirmasi ? `<div class="td-pg">${avatarEl(a.terkonfirmasi, 'sm')}<span class="td-m">${esc(a.terkonfirmasi)}</span></div>`
+        : '<span class="td-none">—</span>'}</td>
+      <td>${chipSt(stLabel(a))}</td>
       <td class="td-chev">${svg('chevR', 14)}</td>
     </tr>`).join('')}</tbody></table>`
   shell(`${isDesk() ? `<div class="page-head"><div><h1>Dashboard</h1><div class="sub">${fmtDlong(today())}</div></div>
@@ -162,12 +173,13 @@ async function vDashboard() {
   ${list}`}`, 'Dashboard')
 }
 function rowAgenda(a, compact = false) {
+  const pg = a.pemegang || a.terkonfirmasi
   return `<button class="agcard" data-nav="#/agenda/${a.id}">
     <div class="ag-main">
       <div class="ag-txt">
         <div class="ag-t">${esc(a.judul)}</div>
         <div class="meta">${fmtD(a.tanggal)} · ${fmtT(a.jam)}${a.lokasi ? ' · ' + esc(a.lokasi) : ''}</div>
-        ${!compact && a.pemegang ? `<div class="meta">Pemegang: ${esc(a.pemegang)}</div>` : ''}
+        ${!compact && pg ? `<div class="meta">Pemegang: ${esc(pg)}</div>` : ''}
       </div>
       <div class="ag-side">${chipSaya(a)}<span class="chev">${svg('chevR', 16)}</span></div>
     </div></button>`
@@ -196,8 +208,10 @@ async function vAgendaList() {
         <td class="td-chk"><input type="checkbox" class="sel-ag" value="${a.id}"></td>
         <td><div class="td-t">${esc(a.judul)}</div></td>
         <td class="td-m">${fmtD(a.tanggal)} · ${fmtT(a.jam)}</td>
-        <td><div class="td-pg">${a.pemegang ? avatarEl(a.pemegang, 'sm') + `<span>${esc(a.pemegang)}</span>` : '<span class="td-none">Belum ditentukan</span>'}</div></td>
-        <td>${chipSaya(a)}</td>
+        <td><div class="td-pg">${a.pemegang ? avatarEl(a.pemegang, 'sm') + `<span>${esc(a.pemegang)}</span>`
+          : a.terkonfirmasi ? avatarEl(a.terkonfirmasi, 'sm') + `<span>${esc(a.terkonfirmasi)}</span>`
+          : '<span class="td-none">Belum ditentukan</span>'}</div></td>
+        <td>${chipSt(stLabel(a))}</td>
         <td class="td-chev">${svg('chevR', 16)}</td>
       </tr>`).join('') || `<tr><td colspan="6">${emptyState('Belum ada agenda di filter ini', 'Coba filter lain atau buat agenda baru', true)}</td></tr>`}
       </tbody></table></div>`, 'Agenda')
@@ -215,6 +229,7 @@ async function vAgendaList() {
 async function vDetail(id) {
   const { agenda: a, chain: ch, pemegang: pg } = await api('/agenda/' + id)
   const mine = ch.find(c => c.user_id === me.id && c.status === 'menunggu')
+  const konfir = ch.find(c => c.status === 'hadir')
   const sekper = me.role === 'sekper'
   const sub = `${fmtD(a.tanggal)} · ${fmtT(a.jam)} WIB${a.lokasi ? ' · ' + esc(a.lokasi) : ''}`
 
@@ -230,7 +245,7 @@ async function vDetail(id) {
         <button class="btn outline" data-nav="#/agenda/${a.id}/edit">Edit Agenda</button>
         ${a.status === 'aktif' ? `<button class="btn outline" data-act="kirim-notif" data-id="${a.id}">${svg('bell', 16)}Kirim Notif</button>` : ''}
         ${a.status === 'aktif' ? `<button class="btn outline danger-o" data-act="batal" data-id="${a.id}">Batalkan</button>` : ''}
-        ${a.status === 'aktif' && !pg ? `<button class="btn" data-act="paksa" data-id="${a.id}">Paksa Titik</button>` : ''}
+        ${a.status === 'aktif' && !pg && !konfir ? `<button class="btn" data-act="paksa" data-id="${a.id}">Paksa Titik</button>` : ''}
       </div></div>`
   } else {
     head = `<div class="det-head">
@@ -241,7 +256,7 @@ async function vDetail(id) {
 
   const metaCard = `<div class="card">
     <div class="meta-rows">
-      <div class="mrow">${svg('clock', 16)}<b>${fmtT(a.jam)} WIB</b></div>
+      <div class="mrow">${svg('clock', 16)}<b>${fmtT(a.jam)} WIB</b><span style="margin-left:auto">${chipSt(stLabel(a))}</span></div>
       <div class="mrow">${svg('cal', 16)}<span>${fmtDlong(a.tanggal)}</span></div>
       ${a.lokasi ? `<div class="mrow">${svg('pin', 16)}<span>${esc(a.lokasi)}</span></div>` : ''}
     </div>
@@ -249,8 +264,9 @@ async function vDetail(id) {
     <div class="creator">Dibuat oleh ${esc(ch[0]?.nama || 'Sekper')}</div>
     ${a.catatan ? `<div class="catatan">${esc(a.catatan)}</div>` : ''}
     ${isDesk() ? `<div class="divi"></div>
-    <div class="label" style="margin-bottom:8px">Pemegang aktif</div>
+    <div class="label" style="margin-bottom:8px">${konfir ? 'Pemegang (Terkonfirmasi)' : 'Pemegang aktif'}</div>
     ${pg ? `<div class="pg-row">${avatarEl(pg.nama, 'lg')}<div style="flex:1;min-width:0"><div class="pg-nm">${esc(pg.nama)}</div><div class="pg-role">${esc(pg.role)}</div></div>${chipSt('menunggu')}</div>`
+      : konfir ? `<div class="pg-row">${avatarEl(konfir.nama, 'lg')}<div style="flex:1;min-width:0"><div class="pg-nm">${esc(konfir.nama)}</div><div class="pg-role">${esc(konfir.role)}</div></div>${chipSt('hadir')}</div>`
       : `<div style="color:var(--red);font-weight:bold">Rantai mentok — tidak ada pemegang aktif</div>
          <div style="color:var(--ink4);font-size:12px;margin-top:4px">Semua penerima sudah menjawab / menolak. Paksa titik ke user lain atau batalkan agenda.</div>`}
     <div class="divi"></div>
@@ -281,7 +297,10 @@ async function vDetail(id) {
       </div>`
   }).join('')}
   </div>
-  ${mine ? `<div class="tr-note">Anda pemegang aktif agenda ini</div>` : ''}
+  ${mine ? `<div class="tr-note">Anda pemegang aktif agenda ini</div>`
+    : konfir ? `<div class="tr-note" style="color:var(--green)">Pemegang: ${esc(konfir.nama)} (Hadir)</div>`
+    : pg ? `<div class="tr-note">Pemegang aktif: ${esc(pg.nama)}</div>`
+    : `<div class="tr-note" style="color:var(--red)">Belum ditentukan</div>`}
   </div>` : ''
 
   const banner = mine ? `<div class="banner">${svg('bell', 16)}Menunggu jawaban Anda — ${hari(a.tanggal).toLowerCase()} ${fmtT(a.jam)}</div>` : ''
@@ -294,7 +313,7 @@ async function vDetail(id) {
       ${a.status === 'draft' ? `<button class="btn" style="flex:1" data-act="kirim" data-id="${a.id}">Kirim Agenda</button>` : ''}
       ${a.status === 'aktif' ? `<button class="btn outline" style="flex:1" data-act="kirim-notif" data-id="${a.id}">${svg('bell', 16)}Kirim Notif</button>` : ''}
       ${a.status === 'aktif' ? `<button class="btn outline danger-o" style="flex:1" data-act="batal" data-id="${a.id}">Batalkan</button>` : ''}
-      ${a.status === 'aktif' && !pg ? `<button class="btn" style="flex:1" data-act="paksa" data-id="${a.id}">Paksa Titik</button>` : ''}
+      ${a.status === 'aktif' && !pg && !konfir ? `<button class="btn" style="flex:1" data-act="paksa" data-id="${a.id}">Paksa Titik</button>` : ''}
     </div>` : ''
 
   shell(`${head}
@@ -397,7 +416,7 @@ async function vPengguna() {
 // ---------- views: responder ----------
 async function vBeranda() {
   const items = await api('/agenda?filter=semua')
-  const naik = items.filter(a => a.tanggal >= today()).sort((x, y) => x.tanggal.localeCompare(y.tanggal))
+  const naik = items.filter(a => stLabel(a) === 'mendatang').sort((x, y) => (x.tanggal + x.jam).localeCompare(y.tanggal + y.jam))
   const hero = naik[0] || items[0]
   const mendatang = (naik.length ? naik.slice(1, 4) : items.slice(1, 4))
   const heroHtml = hero ? `<button class="hero" data-nav="#/agenda/${hero.id}">
