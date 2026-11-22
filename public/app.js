@@ -144,25 +144,13 @@ async function vDashboard() {
   const terk = items.filter(a => a.n_hadir > 0).length
   const alih = items.filter(a => a.n_alih > 0).length
   const stats = [[aktif, 'Agenda aktif'], [menunggu, 'Menunggu jawaban'], [terk, 'Terkonfirmasi'], [alih, 'Dialihkan']]
-  const list = recent.length ? recent.map(a => rowAgenda(a, true)).join('')
+  const list = recent.length ? recent.map(a => rowAgenda(a)).join('')
     : emptyState('Belum ada agenda', isDesk() ? 'Buat agenda pertama Anda' : 'Tekan tombol + untuk membuat agenda', true)
-  const tbl = `<table>
-    <thead><tr><th class="td-chk"><input type="checkbox" class="sel-all"></th><th>Agenda</th><th>Tanggal</th><th>Pemegang</th><th>Status</th><th></th></tr></thead>
-    <tbody>${items.map(a => `<tr class="rowlink" data-nav="#/agenda/${a.id}">
-      <td class="td-chk"><input type="checkbox" class="sel-ag" value="${a.id}"></td>
-      <td><div class="td-t">${esc(a.judul)}</div><div class="td-m">${esc(a.lokasi || 'TBD')}</div></td>
-      <td class="td-m">${fmtD(a.tanggal)} · ${fmtT(a.jam)}</td>
-      <td>${a.pemegang ? `<div class="td-pg">${avatarEl(a.pemegang, 'sm')}<span class="td-m">${esc(a.pemegang)}</span></div>`
-        : a.terkonfirmasi ? `<div class="td-pg">${avatarEl(a.terkonfirmasi, 'sm')}<span class="td-m">${esc(a.terkonfirmasi)}</span></div>`
-        : '<span class="td-none">—</span>'}</td>
-      <td>${chipSt(stLabel(a))}</td>
-      <td class="td-chev">${svg('chevR', 14)}</td>
-    </tr>`).join('')}</tbody></table>`
   shell(`${isDesk() ? `<div class="page-head"><div><h1>Dashboard</h1><div class="sub">${fmtDlong(today())}</div></div>
-    <div style="display:flex;gap:12px"><button class="btn outline danger-o" id="del-btn" data-act="hapus-sel" hidden>Hapus</button>
-    <button class="btn" data-nav="#/buat">${svg('plus', 16)}Buat Agenda</button></div></div>
+    <div><button class="btn" data-nav="#/buat">${svg('plus', 16)}Buat Agenda</button></div></div>
   <div class="statbar stat-cards">${stats.map(([n, l]) => `<div class="st"><div class="num">${n}</div><div class="lbl">${l}</div></div>`).join('')}</div>
-  <div class="card tblcard">${items.length ? tbl : emptyState('Belum ada agenda', 'Buat agenda pertama Anda', true)}</div>`
+  <div class="label sec">AGENDA TERBARU</div>
+  ${list}`
     : `${mobHead()}
   <div class="statbar">${[[aktif, 'Agenda aktif'], [menunggu, 'Menunggu jawaban'], [draft, 'Draft']].map(([n, l]) => `<div class="st"><div class="num">${n}</div><div class="lbl">${l}</div></div>`).join('')}</div>
   <div class="label sec">AGENDA TERBARU</div>
