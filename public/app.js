@@ -7,6 +7,7 @@ let unread = 0
 let listFilter = 'semua'
 let listTerm = ''
 let notifSeg = 'semua'
+let delSel = new Set() // id agenda terpilih untuk hapus multi
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
 const api = async (p, opts = {}) => {
@@ -129,6 +130,7 @@ function vGantiPassword() {
 
 // ---------- views: sekper ----------
 async function vDashboard() {
+  delSel = new Set()
   const items = await api('/agenda?filter=semua')
   const aktif = items.filter(a => a.status === 'aktif').length
   const menunggu = items.filter(a => a.status === 'aktif' && a.pemegang).length
@@ -140,8 +142,9 @@ async function vDashboard() {
   const list = recent.length ? recent.map(a => rowAgenda(a, true)).join('')
     : emptyState('Belum ada agenda', isDesk() ? 'Buat agenda pertama Anda' : 'Tekan tombol + untuk membuat agenda', true)
   const tbl = `<table>
-    <thead><tr><th>Agenda</th><th>Tanggal</th><th>Pemegang</th><th>Status</th><th></th></tr></thead>
+    <thead><tr><th class="td-chk"><input type="checkbox" class="sel-all"></th><th>Agenda</th><th>Tanggal</th><th>Pemegang</th><th>Status</th><th></th></tr></thead>
     <tbody>${items.map(a => `<tr class="rowlink" data-nav="#/agenda/${a.id}">
+      <td class="td-chk"><input type="checkbox" class="sel-ag" value="${a.id}"></td>
       <td><div class="td-t">${esc(a.judul)}</div><div class="td-m">${esc(a.lokasi || 'TBD')}</div></td>
       <td class="td-m">${fmtD(a.tanggal)} · ${fmtT(a.jam)}</td>
       <td>${a.pemegang ? `<div class="td-pg">${avatarEl(a.pemegang, 'sm')}<span class="td-m">${esc(a.pemegang)}</span></div>` : '<span class="td-none">—</span>'}</td>
@@ -149,7 +152,8 @@ async function vDashboard() {
       <td class="td-chev">${svg('chevR', 14)}</td>
     </tr>`).join('')}</tbody></table>`
   shell(`${isDesk() ? `<div class="page-head"><div><h1>Dashboard</h1><div class="sub">${fmtDlong(today())}</div></div>
-    <button class="btn" data-nav="#/buat">${svg('plus', 16)}Buat Agenda</button></div>
+    <div style="display:flex;gap:12px"><button class="btn outline danger-o" id="del-btn" data-act="hapus-sel" hidden>Hapus</button>
+    <button class="btn" data-nav="#/buat">${svg('plus', 16)}Buat Agenda</button></div></div>
   <div class="statbar stat-cards">${stats.map(([n, l]) => `<div class="st"><div class="num">${n}</div><div class="lbl">${l}</div></div>`).join('')}</div>
   <div class="card tblcard">${items.length ? tbl : emptyState('Belum ada agenda', 'Buat agenda pertama Anda', true)}</div>`
     : `${mobHead()}
@@ -175,6 +179,7 @@ const emptyState = (judul, sub, buat = false) => `<div class="empty">
   ${buat ? `<button class="btn" data-nav="#/buat">Buat Agenda</button>` : ''}
 </div>`
 async function vAgendaList() {
+  delSel = new Set()
   const items = await api(`/agenda?filter=${listFilter}&q=${encodeURIComponent(listTerm)}`)
   const filterRow = `<div class="filters">
       ${['semua', 'minggu', 'bulan'].map(f => `<button class="fchip ${listFilter === f ? 'on' : ''}" data-act="filter" data-v="${f}">${{ semua: 'Semua', minggu: 'Minggu ini', bulan: 'Bulan ini' }[f]}</button>`).join('')}
@@ -182,17 +187,19 @@ async function vAgendaList() {
     </div>`
   if (isDesk()) {
     shell(`<div class="page-head"><div><h1>Agenda</h1><div class="sub">Semua agenda yang Anda kelola</div></div>
-      <button class="btn" data-nav="#/buat">${svg('plus', 16)}Buat Agenda</button></div>
+      <div style="display:flex;gap:12px"><button class="btn outline danger-o" id="del-btn" data-act="hapus-sel" hidden>Hapus</button>
+      <button class="btn" data-nav="#/buat">${svg('plus', 16)}Buat Agenda</button></div></div>
     ${filterRow}
     <div class="card tblcard">
-      <table><thead><tr><th>Agenda</th><th>Tanggal</th><th>Pemegang</th><th>Status</th><th></th></tr></thead><tbody>
+      <table><thead><tr><th class="td-chk"><input type="checkbox" class="sel-all"></th><th>Agenda</th><th>Tanggal</th><th>Pemegang</th><th>Status</th><th></th></tr></thead><tbody>
       ${items.map(a => `<tr class="rowlink" data-nav="#/agenda/${a.id}">
+        <td class="td-chk"><input type="checkbox" class="sel-ag" value="${a.id}"></td>
         <td><div class="td-t">${esc(a.judul)}</div></td>
         <td class="td-m">${fmtD(a.tanggal)} · ${fmtT(a.jam)}</td>
         <td><div class="td-pg">${a.pemegang ? avatarEl(a.pemegang, 'sm') + `<span>${esc(a.pemegang)}</span>` : '<span class="td-none">Belum ditentukan</span>'}</div></td>
         <td>${chipSaya(a)}</td>
         <td class="td-chev">${svg('chevR', 16)}</td>
-      </tr>`).join('') || `<tr><td colspan="5">${emptyState('Belum ada agenda di filter ini', 'Coba filter lain atau buat agenda baru', true)}</td></tr>`}
+      </tr>`).join('') || `<tr><td colspan="6">${emptyState('Belum ada agenda di filter ini', 'Coba filter lain atau buat agenda baru', true)}</td></tr>`}
       </tbody></table></div>`, 'Agenda')
     $('#q').addEventListener('input', (e) => { listTerm = e.target.value; clearTimeout(vAgendaList._t); vAgendaList._t = setTimeout(vAgendaList, 300) })
   } else {
@@ -499,6 +506,7 @@ async function modalPaksa(agendaId) {
 
 // ---------- actions ----------
 document.addEventListener('click', async (e) => {
+  if (e.target.closest('input.sel-ag, input.sel-all')) return // checkbox tidak ikut navigasi baris
   const nav = e.target.closest('[data-nav]')
   if (nav) {
     if (nav.dataset.nav === 'back') { history.back(); return }
@@ -533,6 +541,12 @@ document.addEventListener('click', async (e) => {
       await api(`/agenda/${id}/batal`, { method: 'POST' })
       toast('Agenda dibatalkan'); route()
     }
+    else if (act === 'hapus-sel') {
+      if (!delSel.size) return
+      if (!confirm(`Hapus ${delSel.size} agenda? Tindakan tidak bisa dibatalkan.`)) return
+      const r = await api('/agenda/hapus', { method: 'POST', body: JSON.stringify({ ids: [...delSel].map(Number) }) })
+      toast(`Dihapus ${r.n} agenda`); delSel = new Set(); route()
+    }
     else if (act === 'simpan-draft') {
       const f = el.closest('form')
       submitAgenda(f, false).catch((err) => toast(err.message, true))
@@ -557,6 +571,13 @@ document.addEventListener('click', async (e) => {
 })
 
 document.addEventListener('change', async (e) => {
+  const selAll = e.target.closest('input.sel-all')
+  if (selAll) {
+    document.querySelectorAll('input.sel-ag').forEach(c => { c.checked = selAll.checked; selAll.checked ? delSel.add(c.value) : delSel.delete(c.value) })
+    updDelBtn(); return
+  }
+  const sel = e.target.closest('input.sel-ag')
+  if (sel) { sel.checked ? delSel.add(sel.value) : delSel.delete(sel.value); updDelBtn(); return }
   const el = e.target.closest('select[data-act="ubah-status"]')
   if (!el) return
   try {
@@ -564,6 +585,11 @@ document.addEventListener('change', async (e) => {
     toast('Status diubah')
   } catch (err) { toast(err.message, true) }
 })
+
+function updDelBtn() {
+  const b = $('#del-btn')
+  if (b) { b.hidden = delSel.size === 0; b.textContent = `Hapus (${delSel.size})` }
+}
 
 async function submitAgenda(f, kirim) {
   const data = Object.fromEntries(new FormData(f).entries())

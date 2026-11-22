@@ -139,6 +139,19 @@ r.put('/:id', mustLogin, sekperOnly, async (req, res) => {
   res.json({ ok: true })
 })
 
+// ---- hapus agenda (sekper, bisa multi id sekaligus) ----
+r.post('/hapus', mustLogin, sekperOnly, async (req, res) => {
+  const { ids = [] } = req.body || {}
+  const list = ids.filter((x) => Number.isInteger(x))
+  if (list.length === 0) return res.status(400).json({ error: 'pilih agenda yang akan dihapus' })
+  for (const id of list) {
+    await q('DELETE FROM notifikasi WHERE agenda_id=?', [id])
+    await q('DELETE FROM peserta_agenda WHERE agenda_id=?', [id])
+    await q('DELETE FROM agenda WHERE id=?', [id])
+  }
+  res.json({ ok: true, n: list.length })
+})
+
 // ---- batal (sekper) ----
 r.post('/:id/batal', mustLogin, sekperOnly, async (req, res) => {
   await q('UPDATE agenda SET status=\'batal\' WHERE id=?', [req.params.id])

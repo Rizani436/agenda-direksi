@@ -129,6 +129,8 @@ td { padding: 14px 12px 14px 0; border-top: 1px solid var(--line); }
 tbody tr:first-child td { border-top: 0; }
 tr.rowlink { cursor: pointer; }
 tr.rowlink:hover { background: var(--hover); }
+.td-chk { width: 36px; padding-right: 4px; }
+.td-chk input { width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer; }
 td .td-t { font-weight: bold; font-size: 13px; color: var(--ink); }
 td .td-m { color: var(--ink6); font-size: 12px; }
 td .td-none { color: var(--ink4); font-size: 12px; }
