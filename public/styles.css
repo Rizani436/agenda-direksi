@@ -199,6 +199,30 @@ td .td-none { color: var(--ink4); font-size: 12px; }
 .creator { color: var(--ink6); font-size: 12px; }
 .catatan { color: var(--ink4); font-size: 12px; margin-top: 8px; }
 
+/* ---- dashboard sekper: grafik mingguan + donut status ---- */
+.dash-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 16px; margin-bottom: 6px; }
+.dash-title { font: bold 15px Georgia, serif; color: var(--ink); }
+.dash-sub { color: var(--ink4); font-size: 11px; margin: 2px 0 16px; }
+.wk { display: flex; gap: 8px; align-items: flex-end; }
+.wk-col { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.wk-n { font-size: 11px; font-weight: bold; color: var(--pri); min-height: 15px; }
+.wk-col.today .wk-n { color: var(--ink); }
+.wk-bar { width: 72%; max-width: 44px; background: var(--sky-tint); border-radius: 8px; }
+.wk-col.today .wk-bar { background: var(--pri); }
+.wk-d { font-size: 10px; color: var(--ink4); text-align: center; line-height: 1.3; }
+.wk-d b { display: block; color: var(--ink); font-size: 11px; }
+.wk-col.today .wk-d { color: var(--pri); font-weight: bold; }
+.donut-wrap { display: flex; align-items: center; gap: 18px; }
+.donut { position: relative; width: 110px; height: 110px; border-radius: 50%; flex: none; }
+.donut::after { content: ''; position: absolute; inset: 16px; background: var(--surface); border-radius: 50%; }
+.donut-c { position: absolute; inset: 0; z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.donut-c .num { font: bold 20px Georgia, serif; color: var(--ink); }
+.donut-c .lbl { font-size: 9px; color: var(--ink4); }
+.legend { display: flex; flex-direction: column; gap: 8px; min-width: 0; flex: 1; }
+.legend .lg { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--ink6); }
+.legend .dot { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+.legend .lg b { margin-left: auto; color: var(--ink); }
+
 /* ---- statbar ---- */
 .statbar { display: flex; background: var(--surface); border-radius: var(--r-card); padding: 14px 20px; margin-bottom: 20px; }
 .statbar .st { flex: 1; }
@@ -427,6 +451,7 @@ td .td-none { color: var(--ink4); font-size: 12px; }
   .det-head { margin-top: 4px; }
   .btn-block.sticky { margin-top: 8px; }
   .info-cols { gap: 24px; flex-wrap: wrap; }
+  .dash-grid { grid-template-columns: 1fr; }
   .search { width: 100%; margin-left: 0; order: 2; }
   .td-chev { display: none; }
   .modal-bg { padding: 16px; align-items: flex-end; }

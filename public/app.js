@@ -146,13 +146,53 @@ async function vDashboard() {
   const stats = [[aktif, 'Agenda aktif'], [menunggu, 'Menunggu jawaban'], [terk, 'Terkonfirmasi'], [alih, 'Dialihkan']]
   const list = recent.length ? recent.map(a => rowAgenda(a)).join('')
     : emptyState('Belum ada agenda', isDesk() ? 'Buat agenda pertama Anda' : 'Tekan tombol + untuk membuat agenda', true)
+  // grafik batang: agenda 7 hari ke depan (draft/batal tidak dihitung)
+  const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  const days = [...Array(7)].map((_, i) => {
+    const d = new Date(); d.setDate(d.getDate() + i)
+    return { d, n: items.filter(a => a.tanggal === iso(d) && a.status !== 'draft' && a.status !== 'batal').length }
+  })
+  const max = Math.max(1, ...days.map(x => x.n))
+  const jml7 = days.reduce((s, x) => s + x.n, 0)
+  const weekCard = `<div class="card">
+    <div class="dash-title">Agenda 7 hari ke depan</div>
+    <div class="dash-sub">${jml7} agenda terjadwal, termasuk hari ini</div>
+    <div class="wk">${days.map((x, i) => `<div class="wk-col${i === 0 ? ' today' : ''}">
+      <div class="wk-n">${x.n || ''}</div>
+      <div class="wk-bar" style="height:${x.n ? Math.round(x.n / max * 100) : 4}px${x.n ? '' : ';background:var(--line)'}"></div>
+      <div class="wk-d"><b>${x.d.getDate()}</b>${x.d.toLocaleDateString('id-ID', { weekday: 'short' })}</div>
+    </div>`).join('')}</div>
+  </div>`
+  // donut status konfirmasi: menunggu jawaban -> dapat dihadiri -> selesai
+  const st = { menunggu: 0, dapat: 0, selesai: 0 }
+  items.forEach(a => { const s = stLabel(a); if (s in st) st[s]++ })
+  const total = st.menunggu + st.dapat + st.selesai
+  const p1 = total ? st.menunggu / total * 100 : 0
+  const p2 = p1 + (total ? st.dapat / total * 100 : 0)
+  const donutCard = `<div class="card">
+    <div class="dash-title">Status konfirmasi</div>
+    <div class="dash-sub">Semua agenda kecuali draft & batal</div>
+    ${total ? `<div class="donut-wrap">
+      <div class="donut" style="background:conic-gradient(var(--pri) 0 ${p1}%, var(--green) ${p1}% ${p2}%, #C4CFD8 ${p2}% 100%)">
+        <div class="donut-c"><div class="num">${total}</div><div class="lbl">agenda</div></div>
+      </div>
+      <div class="legend">
+        <div class="lg"><span class="dot" style="background:var(--pri)"></span>Menunggu jawaban<b>${st.menunggu}</b></div>
+        <div class="lg"><span class="dot" style="background:var(--green)"></span>Dapat dihadiri<b>${st.dapat}</b></div>
+        <div class="lg"><span class="dot" style="background:#C4CFD8"></span>Selesai<b>${st.selesai}</b></div>
+      </div>
+    </div>` : `<div class="helper">Belum ada agenda aktif atau selesai.</div>`}
+  </div>`
+  const dash = `<div class="dash-grid">${weekCard}${donutCard}</div>`
   shell(`${isDesk() ? `<div class="page-head"><div><h1>Dashboard</h1><div class="sub">${fmtDlong(today())}</div></div>
     <div><button class="btn" data-nav="#/buat">${svg('plus', 16)}Buat Agenda</button></div></div>
   <div class="statbar stat-cards">${stats.map(([n, l]) => `<div class="st"><div class="num">${n}</div><div class="lbl">${l}</div></div>`).join('')}</div>
+  ${dash}
   <div class="label sec">AGENDA TERBARU</div>
   ${list}`
     : `${mobHead()}
   <div class="statbar">${[[aktif, 'Agenda aktif'], [menunggu, 'Menunggu jawaban'], [draft, 'Draft']].map(([n, l]) => `<div class="st"><div class="num">${n}</div><div class="lbl">${l}</div></div>`).join('')}</div>
+  ${dash}
   <div class="label sec">AGENDA TERBARU</div>
   ${list}`}`, 'Dashboard')
 }
