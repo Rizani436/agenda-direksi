@@ -1,0 +1,58 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "$description": "Palet Agenda Direksi (sumber: :root public/styles.css). App light-only; blok dark = nilai sama (tema gelap belum dipakai), agar gate mengukur palet yang benar-benar dikirim.",
+
+  "primitive": {
+    "ink":     { "$type": "color", "$value": "#1C3140" },
+    "ink6":    { "$type": "color", "$value": "#52677A" },
+    "ink4":    { "$type": "color", "$value": "#5A6B7B" },
+    "pri":     { "$type": "color", "$value": "#355872" },
+    "btnhover":{ "$type": "color", "$value": "#33475A" },
+    "btnpress":{ "$type": "color", "$value": "#0F1E28" },
+    "white":   { "$type": "color", "$value": "#FFFFFF" },
+    "line":    { "$type": "color", "$value": "#E7ECEF" },
+    "green":   { "$type": "color", "$value": "#236A4D" },
+    "greentint":{ "$type": "color", "$value": "#E3F1EB" },
+    "red":     { "$type": "color", "$value": "#C0392B" },
+    "redtint": { "$type": "color", "$value": "#F9E9E8" },
+    "ground":  { "$type": "color", "$value": "#F7F8F0" }
+  },
+
+  "semantic": {
+    "surface": {
+      "page": { "$type": "color", "$value": "{primitive.ground}" },
+      "card": { "$type": "color", "$value": "{primitive.white}" }
+    },
+    "text": {
+      "primary":   { "$type": "color", "$value": "{primitive.ink}" },
+      "secondary": { "$type": "color", "$value": "{primitive.ink6}" },
+      "tertiary":  { "$type": "color", "$value": "{primitive.ink4}" },
+      "on-action": { "$type": "color", "$value": "{primitive.white}" },
+      "link":      { "$type": "color", "$value": "{primitive.pri}" }
+    },
+    "action": {
+      "primary":        { "$type": "color", "$value": "{primitive.ink}" },
+      "primary-hover":  { "$type": "color", "$value": "{primitive.btnhover}" },
+      "primary-active": { "$type": "color", "$value": "{primitive.btnpress}" },
+      "destructive":    { "$type": "color", "$value": "{primitive.red}" }
+    },
+    "border": {
+      "strong":  { "$type": "color", "$value": "{primitive.ink6}" },
+      "default": { "$type": "color", "$value": "{primitive.line}" }
+    },
+    "feedback": {
+      "success-bg":   { "$type": "color", "$value": "{primitive.greentint}" },
+      "success-text": { "$type": "color", "$value": "{primitive.green}" },
+      "danger-bg":    { "$type": "color", "$value": "{primitive.redtint}" },
+      "danger-text":  { "$type": "color", "$value": "{primitive.red}" }
+    }
+  },
+
+  "dark": {
+    "$description": "Tema gelap belum ada di app; nilai identik dengan light",
+    "text":    { "primary": { "$type": "color", "$value": "{primitive.ink}" }, "secondary": { "$type": "color", "$value": "{primitive.ink6}" }, "tertiary": { "$type": "color", "$value": "{primitive.ink4}" }, "on-action": { "$type": "color", "$value": "{primitive.white}" }, "link": { "$type": "color", "$value": "{primitive.pri}" } },
+    "surface": { "page": { "$type": "color", "$value": "{primitive.ground}" }, "card": { "$type": "color", "$value": "{primitive.white}" } },
+    "action":  { "primary": { "$type": "color", "$value": "{primitive.ink}" } },
+    "border":  { "strong": { "$type": "color", "$value": "{primitive.ink6}" }, "default": { "$type": "color", "$value": "{primitive.line}" } }
+  }
+}
