@@ -17,11 +17,39 @@ const app = express()
 app.use(express.json())
 app.use((req, res, next) => { if (req.originalUrl.startsWith('/api')) console.log(req.method, req.originalUrl); next() })
 app.set('trust proxy', 1) // deploy di belakang proxy https (siagen.nexus-aniway.online)
+
+// sesi disimpan di tabel DB agar login bertahan antar restart container — HP cukup login sekali
+const SESSION_TTL = 365 * 24 * 3600 * 1000 // 1 tahun; rolling = tiap aktifitas memperpanjang otomatis
+class DbStore extends session.Store {
+  get(sid, cb) {
+    q('SELECT sess, expires FROM sessions WHERE sid=?', [sid]).then(([rows]) => {
+      if (!rows.length) return cb()
+      if (rows[0].expires < Date.now()) {
+        q('DELETE FROM sessions WHERE sid=?', [sid]).catch(() => {})
+        return cb()
+      }
+      let s; try { s = JSON.parse(rows[0].sess) } catch (_) { return cb() }
+      cb(null, s)
+    }).catch((e) => cb(e))
+  }
+  set(sid, sess, cb) {
+    const exp = sess.cookie?.expires ? new Date(sess.cookie.expires).getTime() : Date.now() + SESSION_TTL
+    q('REPLACE INTO sessions (sid, sess, expires) VALUES (?,?,?)', [sid, JSON.stringify(sess), exp])
+      .then(() => cb()).catch((e) => cb(e))
+  }
+  destroy(sid, cb) { q('DELETE FROM sessions WHERE sid=?', [sid]).then(() => cb()).catch((e) => cb(e)) }
+  touch(sid, sess, cb) {
+    const exp = sess.cookie?.expires ? new Date(sess.cookie.expires).getTime() : Date.now() + SESSION_TTL
+    q('UPDATE sessions SET expires=? WHERE sid=?', [exp, sid]).then(() => cb()).catch((e) => cb(e))
+  }
+}
 app.use(session({
   secret: process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex'), // secret stabil via env agar sesi tidak mati saat restart
   resave: false,
   saveUninitialized: false,
-  cookie: { maxAge: 7 * 24 * 3600 * 1000, sameSite: 'lax', secure: 'auto' }, // secure aktif otomatis saat https, dev http aman
+  rolling: true,
+  cookie: { maxAge: SESSION_TTL, sameSite: 'lax', secure: 'auto' }, // secure aktif otomatis saat https, dev http aman
+  store: new DbStore(),
 }))
 
 app.post('/api/push/subscribe', mustLogin, async (req, res) => {

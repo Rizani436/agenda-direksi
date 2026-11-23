@@ -50,6 +50,13 @@ CREATE TABLE peserta_agenda (
   INDEX idx_user (user_id, status)
 ) ENGINE=InnoDB;
 
+CREATE TABLE sessions (
+  sid      VARCHAR(64) PRIMARY KEY,
+  sess     LONGTEXT NOT NULL,
+  expires  BIGINT NOT NULL,
+  INDEX idx_expires (expires)
+) ENGINE=InnoDB;
+
 CREATE TABLE device_tokens (
   id        INT AUTO_INCREMENT PRIMARY KEY,
   user_id   INT NOT NULL,

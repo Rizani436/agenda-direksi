@@ -52,11 +52,20 @@ export async function pengingat15() {
 // migrasi idempotent untuk DB lama (jalankan tiap boot, aman diulang)
 async function migrasi() {
   const alters = [
+    `CREATE TABLE IF NOT EXISTS sessions (
+      sid      VARCHAR(64) PRIMARY KEY,
+      sess     LONGTEXT NOT NULL,
+      expires  BIGINT NOT NULL,
+      INDEX idx_expires (expires)
+    ) ENGINE=InnoDB`,
     "ALTER TABLE notifikasi MODIFY tipe ENUM('agenda_baru','alihan','h1','h','paksa','ditolak','pengingat','pengingat15','batal') NOT NULL",
     'ALTER TABLE agenda ADD COLUMN pengingat_15 TINYINT(1) NOT NULL DEFAULT 0',
+    'DELETE FROM sessions WHERE expires < ?',
   ]
   for (const s of alters) {
-    try { await q(s) } catch (e) { if (!/Duplicate column/i.test(e.message)) console.warn('[migrasi]', e.message) }
+    try {
+      await q(s, s.startsWith('DELETE') ? [Date.now()] : [])
+    } catch (e) { if (!/Duplicate column/i.test(e.message)) console.warn('[migrasi]', e.message) }
   }
 }
 
