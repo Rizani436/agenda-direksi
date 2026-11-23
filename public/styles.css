@@ -147,6 +147,20 @@ td .td-none { color: var(--ink4); font-size: 12px; }
 .td-pg { display: flex; align-items: center; gap: 10px; }
 .td-chev svg { fill: var(--ink4); width: 14px; height: 14px; }
 .st-sel { width: auto; height: 32px; padding: 4px 10px; border-radius: 14px; font-size: 12px; }
+/* halaman pengguna */
+.pu-bar { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; }
+.pu-bar input { max-width: 280px; }
+.pu-count { color: var(--ink4); font-size: 12px; white-space: nowrap; }
+.role-chip { font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: .06em; background: var(--sky-tint); color: var(--pri); border-radius: 10px; padding: 4px 10px; white-space: nowrap; }
+.st-sel.st-aktif { background: var(--green-tint); color: var(--green); border-color: transparent; font-weight: bold; }
+.st-sel.st-cuti { background: var(--draft); color: var(--ink6); border-color: transparent; }
+.st-sel.st-non { background: var(--red-tint); color: var(--red); border-color: transparent; font-weight: bold; }
+.u-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); padding: 14px 16px; margin-bottom: 10px; }
+.u-top { display: flex; align-items: center; gap: 10px; }
+.u-foot { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+.u-acts { display: flex; gap: 8px; margin-left: auto; }
+.u-warn { display: flex; gap: 6px; align-items: center; margin-top: 10px; font-size: 11px; color: var(--red); background: var(--red-tint); border-radius: 8px; padding: 6px 10px; }
+.u-warn svg { flex: none; fill: currentColor; }
 
 /* ---- timeline vertikal (riwayat) ---- */
 .timeline-wrap { margin-top: 16px; }

@@ -441,29 +441,54 @@ async function vBuat(id) {
       ${form}${peserta}${btns}</form>`}`, 'Buat Agenda')
   psRerender() // cat chips terpilih awal (mode edit)
 }
-async function vPengguna() {
-  const users = await api('/users')
-  shell(`<div class="page-head"><div><h1>Pengguna</h1><div class="sub">Kelola akun dan role</div></div>
-    <button class="btn" data-act="tambah-user">${svg('plus', 16)}Tambah</button></div>
-  <div class="card" id="form-user" hidden style="margin-bottom:16px">
-    <form data-form="user-baru"><div style="display:flex;gap:12px;flex-wrap:wrap">
-      <input name="nama" placeholder="Nama lengkap" required style="flex:2;min-width:160px">
-      <input name="username" placeholder="Username" required style="flex:1;min-width:120px">
-      <select name="role" style="flex:1;min-width:120px"><option value="direksi">Direksi</option><option value="kadiv">Kadiv</option><option value="kabak">Kabak</option><option value="sekper">Sekper</option></select>
-      <button class="btn">Simpan</button></div>
-      <p class="helper" style="margin-top:8px">Password awal = username, wajib diganti saat login pertama.</p>
-    </form></div>
-  <div class="card tblcard">
-    <table><thead><tr><th>Nama</th><th>Role</th><th>Status</th><th></th></tr></thead><tbody>
-    ${users.map(u => `<tr>
+let puUsers = [], puDesk = true
+const stCls = { aktif: 'st-aktif', cuti: 'st-cuti', nonaktif: 'st-non' }
+function puPaint() {
+  const body = document.getElementById('pu-body'), cnt = document.getElementById('pu-count')
+  if (!body) return
+  const q = document.getElementById('pu-q').value.trim()
+  const f = q ? puUsers.filter(u => (u.nama + ' ' + u.username).toLowerCase().includes(q.toLowerCase())) : puUsers
+  if (cnt) cnt.textContent = `${f.length} dari ${puUsers.length} pengguna`
+  const sel = u => `<select class="st-sel ${stCls[u.status]}" data-act="ubah-status" data-id="${u.id}">
+    ${['aktif', 'cuti', 'nonaktif'].map(s => `<option ${u.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select>`
+  if (puDesk) {
+    body.innerHTML = f.map(u => `<tr>
       <td><div class="td-pg">${avatarEl(u.nama, 'sm')}<span><div class="td-t">${esc(u.nama)}</div><div class="td-m">${esc(u.username)}${u.push_gagal ? ' · push gagal' : ''}</div></span></div></td>
-      <td class="td-m">${esc(u.role)}</td>
-      <td><select class="st-sel" data-act="ubah-status" data-id="${u.id}">
-        ${['aktif', 'cuti', 'nonaktif'].map(s => `<option ${u.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select></td>
+      <td><span class="role-chip">${esc(u.role)}</span></td>
+      <td>${sel(u)}</td>
       <td style="text-align:right"><button class="btn sm outline" data-act="edit-user" data-id="${u.id}">Edit</button>
         <button class="btn sm outline danger-o" data-act="hapus-user" data-id="${u.id}">Hapus</button></td>
-    </tr>`).join('')}
-    </tbody></table></div>`, 'Pengguna')
+    </tr>`).join('') || `<tr><td colspan="4" class="td-none" style="text-align:center;padding:24px">Tidak ada yang cocok dengan "${esc(q)}"</td></tr>`
+  } else {
+    body.innerHTML = f.map(u => `<div class="u-card">
+      <div class="u-top">${avatarEl(u.nama, 'md')}<div style="flex:1;min-width:0"><div class="td-t">${esc(u.nama)}</div><div class="td-m">${esc(u.username)}</div></div><span class="role-chip">${esc(u.role)}</span></div>
+      <div class="u-foot">${sel(u)}<div class="u-acts"><button class="btn sm outline" data-act="edit-user" data-id="${u.id}">Edit</button>
+        <button class="btn sm outline danger-o" data-act="hapus-user" data-id="${u.id}">Hapus</button></div></div>
+      ${u.push_gagal ? `<div class="u-warn">${svg('info', 14)}Push notifikasi gagal — cek izin notifikasi di HP user</div>` : ''}
+    </div>`).join('') || `<div class="ps-kosong">Tidak ada yang cocok dengan "${esc(q)}"</div>`
+  }
+}
+async function vPengguna() {
+  puUsers = await api('/users')
+  puDesk = isDesk()
+  shell(`<div class="page-head"><div><h1>Pengguna</h1><div class="sub">Kelola akun dan role</div></div>
+    <button class="btn" data-act="tambah-user">${svg('plus', 16)}Tambah</button></div>
+  <div class="card pu-bar"><input id="pu-q" autocomplete="off" placeholder="Cari nama atau username…"><span class="pu-count" id="pu-count"></span></div>
+  <div class="card" id="form-user" hidden style="margin-bottom:16px">
+    <form data-form="user-baru"><div class="label sec" style="margin-bottom:12px">PENGGUNA BARU</div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <div class="field" style="flex:2;min-width:160px;margin-bottom:0"><label class="label" for="nu-nama">Nama lengkap</label><input id="nu-nama" name="nama" required placeholder="mis. Andi Pratama"></div>
+        <div class="field" style="flex:1;min-width:130px;margin-bottom:0"><label class="label" for="nu-user">Username</label><input id="nu-user" name="username" required placeholder="tanpa spasi"></div>
+        <div class="field" style="flex:1;min-width:120px;margin-bottom:0"><label class="label" for="nu-role">Role</label><select id="nu-role" name="role"><option value="direksi">Direksi</option><option value="kadiv">Kadiv</option><option value="kabak">Kabak</option><option value="sekper">Sekper</option></select></div>
+      </div>
+      <div class="auth-err" role="alert" hidden style="margin-top:12px"></div>
+      <p class="helper" style="margin-top:8px">Password awal = username, wajib diganti saat login pertama.</p>
+      <div style="display:flex;gap:12px;margin-top:12px"><button type="button" class="btn outline" data-act="tambah-user" style="flex:1">Batal</button><button class="btn" style="flex:1">Simpan</button></div>
+    </form></div>
+  ${puDesk
+    ? `<div class="card tblcard"><table><thead><tr><th>Nama</th><th>Role</th><th>Status</th><th></th></tr></thead><tbody id="pu-body"></tbody></table></div>`
+    : `<div id="pu-body"></div>`}`, 'Pengguna')
+  puPaint()
 }
 
 // ---------- views: responder ----------
@@ -584,11 +609,12 @@ async function modalEditUser(id) {
   if (!u) return toast('User tidak ditemukan', true)
   modal(`<h2>Edit pengguna</h2>
     <form data-form="edit-user" data-id="${u.id}">
-      <div class="field"><label class="label">Nama</label><input name="nama" required value="${esc(u.nama)}"></div>
-      <div class="field"><label class="label">Role</label>
-        <select name="role">${['sekper', 'direksi', 'kadiv', 'kabak'].map(x => `<option ${u.role === x ? 'selected' : ''}>${x}</option>`).join('')}</select></div>
-      <div class="field"><label class="label">Password baru (opsional)</label>
-        <input name="password" type="password" minlength="6" placeholder="kosongkan bila tidak diubah"></div>
+      <div class="field"><label class="label" for="eu-nama">Nama</label><input id="eu-nama" name="nama" required value="${esc(u.nama)}"></div>
+      <div class="field"><label class="label" for="eu-role">Role</label>
+        <select id="eu-role" name="role">${['sekper', 'direksi', 'kadiv', 'kabak'].map(x => `<option ${u.role === x ? 'selected' : ''}>${x}</option>`).join('')}</select></div>
+      <div class="field"><label class="label" for="ep-pass">Password baru (opsional)</label>
+        <div class="pwd-wrap"><input id="ep-pass" name="password" type="password" minlength="6" autocomplete="new-password" placeholder="kosongkan bila tidak diubah"><button type="button" class="pwd-eye" data-eye="ep-pass" aria-pressed="false" aria-label="Lihat password">${svg('eye', 20)}</button></div></div>
+      <div class="auth-err" role="alert" hidden style="margin-top:12px"></div>
       <div style="display:flex;gap:12px">
         <button type="button" class="btn outline" style="flex:1" data-act="tutup-modal">Batal</button>
         <button class="btn" style="flex:1">Simpan</button></div>
@@ -689,8 +715,16 @@ document.addEventListener('click', async (e) => {
       w.print()
     }
     else if (act === 'hapus-user') {
-      if (!confirm('Hapus user ini?')) return
+      modal(`<h2>Hapus pengguna?</h2>
+        <p class="helper">Akun langsung terhapus. Kalau punya riwayat agenda, hapus akan ditolak server — cukup ubah status jadi nonaktif.</p>
+        <div class="auth-err" role="alert" hidden style="margin-top:12px"></div>
+        <div style="display:flex;gap:12px;margin-top:16px">
+          <button class="btn outline" style="flex:1" data-act="tutup-modal">Batal</button>
+          <button class="btn danger-solid" style="flex:1" data-act="hapus-user-ya" data-id="${id}">Hapus</button></div>`)
+    }
+    else if (act === 'hapus-user-ya') {
       await api('/users/' + id, { method: 'DELETE' })
+      el.closest('.modal-bg').remove()
       toast('User dihapus'); vPengguna()
     }
     else if (act === 'ubah-status') {
@@ -711,6 +745,7 @@ document.addEventListener('change', async (e) => {
   if (!el) return
   try {
     await api('/users/' + el.dataset.id, { method: 'PUT', body: JSON.stringify({ status: el.value }) })
+    el.className = 'st-sel ' + (stCls[el.value] || '')
     toast('Status diubah')
   } catch (err) { toast(err.message, true) }
 })
@@ -786,7 +821,10 @@ document.addEventListener('submit', async (e) => {
 })
 
 // pemilih peserta: ketik nama -> sugesi; klik sugesi -> chip; chip bisa dihapus
-document.addEventListener('input', (e) => { if (e.target.id === 'ps-q') psRerender() })
+document.addEventListener('input', (e) => {
+  if (e.target.id === 'ps-q') psRerender()
+  if (e.target.id === 'pu-q') puPaint()
+})
 document.addEventListener('change', (e) => { if (e.target.id === 'ps-role') psRerender() })
 document.addEventListener('click', (e) => {
   const add = e.target.closest('[data-ps-add]')
