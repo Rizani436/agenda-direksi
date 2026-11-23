@@ -181,7 +181,8 @@ td .td-none { color: var(--ink4); font-size: 12px; }
 .tl-dot.red { background: var(--red); }
 .tl-dot.hollow { background: transparent; border: 1.5px solid var(--ink4); }
 .tl-time { position: absolute; right: 0; top: 2px; color: var(--ink4); font-size: 11px; }
-.tl-t { font-size: 13px; }
+.tl-t { font-size: 13px; display: flex; align-items: center; gap: 8px; }
+.tl-t .avatar { width: 24px; height: 24px; font-size: 9px; flex: none; }
 .tl-role { color: var(--ink4); font-weight: normal; font-size: 12px; }
 .tl-sub { color: var(--ink4); font-size: 12px; margin-top: 2px; }
 
@@ -222,7 +223,12 @@ td .td-none { color: var(--ink4); font-size: 12px; }
 .mrow b { font-weight: bold; }
 .mrow svg { fill: var(--pri); flex: none; }
 .creator { color: var(--ink6); font-size: 12px; }
-.catatan { color: var(--ink4); font-size: 12px; margin-top: 8px; }
+.catatan { background: var(--ground); border-radius: 12px; padding: 12px 14px; color: var(--ink6); font-size: 12px; margin-top: 12px; line-height: 1.5; }
+.cta-stack { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+.banner.draft-b { background: var(--draft); color: var(--ink6); }
+.det-top { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.det-tt { flex: 1; min-width: 0; }
+.det-top .det-judul { font-size: 20px; margin: 0 0 2px; line-height: 1.25; }
 
 /* ---- dashboard sekper: grafik mingguan + donut status ---- */
 .dash-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 16px; margin-bottom: 6px; }

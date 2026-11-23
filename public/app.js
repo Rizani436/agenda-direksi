@@ -298,8 +298,8 @@ async function vDetail(id) {
   } else {
     head = `<div class="det-head">
       <button class="back-btn" data-nav="back" aria-label="Kembali">${svg('back', 18)}</button>
-      <button class="back-btn" data-nav="#/profil" aria-label="Profil">${svg('person', 18)}</button></div>
-      <h1 class="det-judul">${esc(a.judul)}</h1><div class="det-sub">Agenda Direksi · ${fmtD(a.tanggal)} · ${fmtT(a.jam)}</div>`
+      <button class="back-btn" data-nav="#/profil" aria-label="Profil" style="margin-left:auto">${svg('person', 18)}</button></div>
+      <div class="det-top">${tglBadge(a.tanggal)}<div class="det-tt"><h1 class="det-judul">${esc(a.judul)}</h1><div class="det-sub">Agenda Direksi · ${fmtT(a.jam)} WIB</div></div></div>`
   }
 
   const metaCard = `<div class="card">
@@ -310,7 +310,7 @@ async function vDetail(id) {
     </div>
     <div class="divi"></div>
     <div class="creator">Dibuat oleh ${esc(a.pembuat || 'Sekper')}</div>
-    ${a.catatan ? `<div class="catatan">${esc(a.catatan)}</div>` : ''}
+    ${a.catatan ? `<div class="catatan"><div class="label" style="margin-bottom:6px">CATATAN</div>${esc(a.catatan)}</div>` : ''}
     ${isDesk() ? `<div class="divi"></div>
     <div class="label" style="margin-bottom:8px">${konfir ? 'Pemegang (Terkonfirmasi)' : 'Pemegang aktif'}</div>
     ${pg ? `<div class="pg-row">${avatarEl(pg.nama, 'lg')}<div style="flex:1;min-width:0"><div class="pg-nm">${esc(pg.nama)}</div><div class="pg-role">${esc(pg.role)}</div></div>${chipSt('menunggu')}</div>`
@@ -319,15 +319,15 @@ async function vDetail(id) {
          <div style="color:var(--ink4);font-size:12px;margin-top:4px">Semua penerima sudah menjawab / menolak. Paksa titik ke user lain atau batalkan agenda.</div>`}
     <div class="divi"></div>
     <div class="info-cols">
-      <div><div class="label">Tanggal & waktu</div><div class="info-v">${fmtD(a.tanggal)} · ${fmtT(a.jam)} WIB</div></div>
-      <div><div class="label">Lokasi</div><div class="info-v">${esc(a.lokasi || '—')}</div></div>
+      <div><div class="label">Peserta terlibat</div><div class="info-v">${ch.length} orang</div></div>
+      <div><div class="label">Status agenda</div><div class="info-v">${a.status}</div></div>
     </div>` : ''}
   </div>`
 
   const tlDot = (st) => st === 'hadir' ? 'green' : st === 'menunggu' ? 'hollow' : st === 'ditolak' ? 'red' : 'gray'
   const timeline = ch.map(c => `<div class="tl-item"><span class="tl-dot ${tlDot(c.status)}"></span>
     ${c.waktu_respon ? `<span class="tl-time">${fmtD(c.waktu_respon.slice(0, 10))} · ${c.waktu_respon.slice(11, 16)}</span>` : ''}
-    <div class="tl-t" style="font-weight:${c.status === 'menunggu' ? 'normal' : 'bold'}">${esc(c.nama)} <span class="tl-role">(${esc(c.role)})</span></div>
+    <div class="tl-t" style="font-weight:${c.status === 'menunggu' ? 'normal' : 'bold'}">${avatarEl(c.nama, 'sm')} ${esc(c.nama)} <span class="tl-role">(${esc(c.role)})</span></div>
     <div class="tl-sub">${{ hadir: 'Hadir', menunggu: 'Menunggu konfirmasi kehadiran', tidak_hadir: `Mengalihkan ke ${esc((ch.find(x => x.id === c.alih_ke_id) || {}).nama || '—')}`, ditolak: 'Menolak pengalihan' }[c.status] || esc(c.status)}</div>
     ${c.alasan ? `<div class="tl-sub">Alasan: ${esc(c.alasan)}</div>` : ''}
   </div>`).join('')
@@ -352,10 +352,13 @@ async function vDetail(id) {
   </div>` : ''
 
   const banner = mine ? `<div class="banner">${svg('bell', 16)}Menunggu jawaban Anda — ${hari(a.tanggal).toLowerCase()} ${fmtT(a.jam)}</div>` : ''
+  // aksi utama dulu (Hadir), baru alternatif (alihkan)
   const ctaMobile = !isDesk() && mine ? `
-    <button class="btn outline btn-block" data-act="alih" data-id="${mine.id}">Tidak dapat hadir — alihkan</button>
-    <button class="btn btn-block" data-act="hadir" data-id="${mine.id}">Hadir</button>
-    <div class="helper">Pengalihan wajib menyertakan alasan</div>` : ''
+    <div class="cta-stack">
+      <button class="btn btn-block" data-act="hadir" data-id="${mine.id}">Hadir</button>
+      <button class="btn outline btn-block" data-act="alih" data-id="${mine.id}">Tidak dapat hadir — alihkan</button>
+      <div class="helper" style="margin-top:0">Pengalihan wajib menyertakan alasan</div>
+    </div>` : ''
   const ctaSekperMobile = !isDesk() && sekper ? `
     <div style="display:flex;gap:12px;margin-top:16px">
       ${a.status === 'draft' ? `<button class="btn" style="flex:1" data-act="kirim" data-id="${a.id}">Kirim Agenda</button>` : ''}
@@ -370,7 +373,7 @@ async function vDetail(id) {
   ${banner}
   ${ctaMobile}${ctaSekperMobile}
   <div class="card timeline-wrap"><div class="label" style="margin-bottom:4px">Riwayat disposisi</div><div class="timeline">${timeline}</div></div>
-  ${a.status === 'draft' && isDesk() ? '<div class="card" style="margin-top:16px;color:var(--ink4)">Draft — belum dikirim ke peserta. Tekan Kirim Agenda untuk mengirim.</div>' : ''}
+  ${a.status === 'draft' && isDesk() ? `<div class="banner draft-b" style="margin-top:16px">${svg('info', 16)}Draft — belum dikirim ke peserta. Tekan Kirim Agenda untuk mengirim.</div>` : ''}
   `, 'Agenda')
 }
 async function vAlih(pesertaId) {
