@@ -315,28 +315,28 @@ td .td-none { color: var(--ink4); font-size: 12px; }
 /* peserta checkboxes */
 .ps-head { display: flex; align-items: center; justify-content: space-between; }
 .hint { font-weight: normal; font-size: 11px; letter-spacing: 0; text-transform: none; color: var(--ink4); }
-.ps-list { display: flex; flex-direction: column; gap: 8px; }
-.ps-row {
-  display: flex; align-items: center; gap: 12px; background: var(--surface);
-  border: 1.5px solid var(--line); border-radius: var(--r-btn); padding: 10px 14px;
-  cursor: pointer; min-height: 48px; position: relative;
-}
+/* pemilih peserta: role -> ketik nama -> chip terpilih */
 .ps-nm { flex: 1; min-width: 0; font-size: 13px; }
-.ps-row input { position: absolute; opacity: 0; pointer-events: none; }
-.cbox {
-  width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--line);
-  background: var(--surface); flex: none; display: inline-block;
+.chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.chip-ps {
+  display: inline-flex; align-items: center; gap: 8px; background: var(--sky-tint); color: var(--pri);
+  border-radius: 20px; padding: 4px 10px 4px 4px; font-size: 12px; font-weight: bold;
 }
-.ps-row:has(input:checked) .cbox {
-  background: var(--pri); border-color: var(--pri);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z'/%3E%3C/svg%3E");
-  background-size: 14px; background-repeat: no-repeat; background-position: center;
+.chip-ps .avatar { width: 28px; height: 28px; font-size: 10px; background: var(--pri); color: #fff; }
+.chip-ps button { display: flex; color: var(--pri); opacity: .65; padding: 2px; }
+.chip-ps button:hover, .chip-ps button:active { opacity: 1; }
+.ps-sug { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--surface); }
+.ps-sug:empty { display: none; margin: 0; border: 0; }
+.ps-sug-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; text-align: left; color: var(--ink); }
+.ps-sug-row + .ps-sug-row { border-top: 1px solid var(--line); }
+.ps-sug-row:hover, .ps-sug-row:active { background: var(--hover); }
+.ps-kosong {
+  width: 100%; border: 1.5px dashed var(--line); border-radius: 12px; padding: 14px;
+  text-align: center; color: var(--ink6); font-size: 12px;
 }
 .buat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
 .buat-grid .buat-l, .buat-grid .buat-r { min-width: 0; }
 .buat-grid .form-foot { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 12px; }
-.buat-grid .ps-list { gap: 0; }
-.buat-grid .ps-row { border: 0; border-radius: 12px; background: var(--ground); min-height: 52px; }
 .buat-grid .note-bar { margin-top: 16px; }
 .note-bar {
   display: flex; align-items: center; gap: 10px; background: var(--sky-tint); color: var(--pri);

@@ -377,6 +377,23 @@ async function vAlih(pesertaId) {
     <button class="btn btn-block sticky">${svg('send', 16)}Kirim Pengalihan</button>
   </form>`, 'Agenda')
 }
+// state pemilih peserta (halaman buat/edit agenda): role -> ketik nama -> chip
+let psUsers = [], psSel = []
+const psRerender = () => {
+  const chips = document.getElementById('ps-chips'), sug = document.getElementById('ps-sug')
+  if (!chips) return
+  chips.innerHTML = psSel.length
+    ? psSel.map(u => `<span class="chip-ps">${avatarEl(u.nama, 'sm')}<span>${esc(u.nama)}</span><button type="button" data-ps-del="${u.id}" aria-label="Hapus ${esc(u.nama)}">${svg('back', 14)}</button><input type="checkbox" name="peserta" value="${u.id}" checked hidden></span>`).join('')
+    : `<div class="ps-kosong">Belum ada peserta — pilih role lalu ketik nama</div>`
+  const role = document.getElementById('ps-role')?.value || ''
+  const q = document.getElementById('ps-q')?.value.trim().toLowerCase() || ''
+  const cand = (q && role)
+    ? psUsers.filter(u => u.role === role && u.nama.toLowerCase().includes(q) && !psSel.some(s => s.id === u.id))
+    : []
+  sug.innerHTML = cand.length
+    ? cand.map(u => `<button type="button" class="ps-sug-row" data-ps-add="${u.id}">${avatarEl(u.nama, 'md')}<span class="ps-nm">${esc(u.nama)}</span><span class="chip wait">${esc(u.role)}</span></button>`).join('')
+    : (q && role ? `<div class="ps-kosong">Tidak ada nama "${esc(q)}" di role ${esc(role)}</div>` : '')
+}
 async function vBuat(id) {
   const isEdit = !!id
   let a = {}
@@ -387,6 +404,7 @@ async function vBuat(id) {
     terpilih = d.chain.map(c => c.user_id)
   }
   const users = (await api('/users')).filter(u => u.status === 'aktif' && u.role !== 'sekper')
+  psUsers = users; psSel = users.filter(u => terpilih.includes(u.id))
   const fld = (l, inp) => `<div class="field"><label class="label">${l}</label>${inp}</div>`
   const form = `
     ${fld('JUDUL AGENDA', `<input name="judul" required value="${esc(a.judul || '')}" placeholder="Contoh: Rapat Evaluasi Kinerja Q2">`)}
@@ -397,13 +415,13 @@ async function vBuat(id) {
     ${fld('LOKASI', `<input name="lokasi" placeholder="Ruang Rapat / link Zoom" value="${esc(a.lokasi || '')}">`)}
     ${fld('CATATAN', `<textarea name="catatan" rows="3" placeholder="Catatan untuk peserta (opsional)…">${esc(a.catatan || '')}</textarea>`)}`
   const peserta = `<div class="label sec ps-head">PESERTA <span class="hint">pilih minimal 1</span></div>
-    <div class="ps-list">
-    ${users.map(u => `<label class="ps-row">
-      ${avatarEl(u.nama, 'md')}
-      <span class="ps-nm">${esc(u.role)} — ${esc(u.nama)}</span>
-      <input type="checkbox" name="peserta" value="${u.id}" ${terpilih.includes(u.id) ? 'checked' : ''}>
-      <span class="cbox"></span></label>`).join('')}
-    </div>
+    <div id="ps-chips" class="chip-row"></div>
+    <div class="field"><label class="label" for="ps-role">ROLE PESERTA</label><select id="ps-role">
+      <option value="">Pilih role…</option>
+      ${['direksi', 'kadiv', 'kabak'].map(r => `<option>${r}</option>`).join('')}
+    </select></div>
+    <div class="field"><label class="label" for="ps-q">CARI NAMA</label><input id="ps-q" autocomplete="off" placeholder="ketik nama, muncul yang cocok…"></div>
+    <div id="ps-sug" class="ps-sug"></div>
     <div class="note-bar">${svg('info', 16)}Peserta yang tidak dapat hadir dapat mengalihkan tugas atau menolak</div>`
   const btns = isDesk()
     ? `<div class="form-foot"><button type="button" class="btn outline" data-act="tutup-buat">Batal</button>
@@ -421,6 +439,7 @@ async function vBuat(id) {
        <div style="margin-left:14px"><div class="fm-judul">${isEdit ? 'Edit Agenda' : 'Buat Agenda'}</div><div class="det-sub">Undangan terkirim H-1 & hari-H</div></div></div>
     <form data-form="simpan-agenda" data-id="${id || ''}" class="fm">
       ${form}${peserta}${btns}</form>`}`, 'Buat Agenda')
+  psRerender() // cat chips terpilih awal (mode edit)
 }
 async function vPengguna() {
   const users = await api('/users')
@@ -764,6 +783,20 @@ document.addEventListener('submit', async (e) => {
       toast('Pengguna diperbarui'); vPengguna()
     }
   } catch (err) { setErr(f, err.message); selesai(f); toast(err.message, true) }
+})
+
+// pemilih peserta: ketik nama -> sugesi; klik sugesi -> chip; chip bisa dihapus
+document.addEventListener('input', (e) => { if (e.target.id === 'ps-q') psRerender() })
+document.addEventListener('change', (e) => { if (e.target.id === 'ps-role') psRerender() })
+document.addEventListener('click', (e) => {
+  const add = e.target.closest('[data-ps-add]')
+  if (add) {
+    const u = psUsers.find(x => x.id === +add.dataset.psAdd)
+    if (u && !psSel.some(s => s.id === u.id)) { psSel.push(u); psRerender() }
+    return
+  }
+  const del = e.target.closest('[data-ps-del]')
+  if (del) { psSel = psSel.filter(x => x.id !== +del.dataset.psDel); psRerender() }
 })
 
 // ---------- push ----------
