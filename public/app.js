@@ -165,7 +165,7 @@ async function vDashboard() {
   const weekCard = `<div class="card">
     <div class="dash-title">Agenda 7 hari ke depan</div>
     <div class="dash-sub">${jml7} agenda terjadwal, termasuk hari ini</div>
-    <div class="wk">${days.map((x, i) => `<div class="wk-col${i === 0 ? ' today' : ''}">
+    <div class="wk">${days.map((x, i) => `<div class="wk-col${i === 0 ? ' today' : ''}" role="img" aria-label="${x.d.getDate()} ${x.d.toLocaleDateString('id-ID', { weekday: 'long' })}: ${x.n} agenda">
       <div class="wk-n">${x.n || ''}</div>
       <div class="wk-bar" style="height:${x.n ? Math.round(x.n / max * 100) : 4}px${x.n ? '' : ';background:var(--line)'}"></div>
       <div class="wk-d"><b>${x.d.getDate()}</b>${x.d.toLocaleDateString('id-ID', { weekday: 'short' })}</div>
@@ -181,25 +181,25 @@ async function vDashboard() {
     <div class="dash-title">Status konfirmasi</div>
     <div class="dash-sub">Semua agenda kecuali draft & batal</div>
     ${total ? `<div class="donut-wrap">
-      <div class="donut" style="background:conic-gradient(var(--pri) 0 ${p1}%, var(--green) ${p1}% ${p2}%, #C4CFD8 ${p2}% 100%)">
+      <div class="donut" style="background:conic-gradient(var(--pri) 0 ${p1}%, var(--green) ${p1}% ${p2}%, var(--mist) ${p2}% 100%)">
         <div class="donut-c"><div class="num">${total}</div><div class="lbl">agenda</div></div>
       </div>
       <div class="legend">
         <div class="lg"><span class="dot" style="background:var(--pri)"></span>Menunggu jawaban<b>${st.menunggu}</b></div>
         <div class="lg"><span class="dot" style="background:var(--green)"></span>Dapat dihadiri<b>${st.dapat}</b></div>
-        <div class="lg"><span class="dot" style="background:#C4CFD8"></span>Selesai<b>${st.selesai}</b></div>
+        <div class="lg"><span class="dot" style="background:var(--mist)"></span>Selesai<b>${st.selesai}</b></div>
       </div>
     </div>` : `<div class="helper">Belum ada agenda aktif atau selesai.</div>`}
   </div>`
   const dash = `<div class="dash-grid">${weekCard}${donutCard}</div>`
   shell(`${isDesk() ? `<div class="page-head"><div><h1>Dashboard</h1><div class="sub">${fmtDlong(today())}</div></div>
     <div><button class="btn" data-nav="#/buat">${svg('plus', 16)}Buat Agenda</button></div></div>
-  <div class="statbar stat-cards">${stats.map(([n, l]) => `<div class="st"><div class="num">${n}</div><div class="lbl">${l}</div></div>`).join('')}</div>
+  <div class="statbar stat-cards">${stats.map(([n, l]) => `<button type="button" class="st" data-nav="#/agenda" aria-label="${n} ${l} — buka daftar agenda"><div class="num">${n}</div><div class="lbl">${l}</div></button>`).join('')}</div>
   ${dash}
   <div class="label sec">AGENDA TERBARU</div>
   ${list}`
     : `${mobHead()}
-  <div class="statbar">${[[aktif, 'Agenda aktif'], [menunggu, 'Menunggu jawaban'], [draft, 'Draft']].map(([n, l]) => `<div class="st"><div class="num">${n}</div><div class="lbl">${l}</div></div>`).join('')}</div>
+  <div class="statbar stat-cards">${[[aktif, 'Agenda aktif'], [menunggu, 'Menunggu jawaban'], [draft, 'Draft']].map(([n, l]) => `<button type="button" class="st" data-nav="#/agenda" aria-label="${n} ${l} — buka daftar agenda"><div class="num">${n}</div><div class="lbl">${l}</div></button>`).join('')}</div>
   ${dash}
   <div class="label sec">AGENDA TERBARU</div>
   ${list}`}`, 'Dashboard')
@@ -528,9 +528,9 @@ async function vBeranda() {
   </button>` : ''
   shell(`${mobHead()}
   ${heroHtml}
-  <div class="statbar st-inline">
-    <div class="st"><div class="num">${naik.length}</div><div class="lbl">Agenda mendatang</div></div>
-    <div class="st"><div class="num">${items.filter(a => a.status_saya === 'menunggu' && a.pemegang).length}</div><div class="lbl">Menunggu jawaban</div></div>
+  <div class="statbar stat-cards">
+    <button type="button" class="st" data-nav="#/agenda" aria-label="${naik.length} agenda mendatang — buka daftar agenda"><div class="num">${naik.length}</div><div class="lbl">Agenda mendatang</div></button>
+    <button type="button" class="st" data-nav="#/agenda" aria-label="Lihat agenda yang menunggu jawaban Anda"><div class="num">${items.filter(a => a.status_saya === 'menunggu' && a.pemegang).length}</div><div class="lbl">Menunggu jawaban</div></button>
   </div>
   ${mendatang.length ? `<div class="label sec">AGENDA MENDATANG</div>${mendatang.map(a => rowAgenda(a, true)).join('')}` : ''}`,
     'Beranda')

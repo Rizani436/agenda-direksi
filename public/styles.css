@@ -2,7 +2,7 @@
 :root {
   --ink: #1C3140; --ink6: #52677A; --ink4: #5A6B7B;
   --pri: #355872; --sky: #9CD5FF; --mist: #7AAACE;
-  --sky-tint: #E4F1FC; --ground: #F7F8F0; --surface: #FFFFFF;
+  --sky-tint: #E4F1FC; --sky-tint-hover: #d8e9f8; --ground: #F7F8F0; --surface: #FFFFFF;
   --line: #E7ECEF; --green: #236A4D; --green-tint: #E3F1EB;
   --red: #C0392B; --red-tint: #F9E9E8; --draft: #EDF0F2;
   --hover: #F5F8FA; --btn-hover: #33475A; --btn-press: #0F1E28;
@@ -256,7 +256,9 @@ td .td-none { color: var(--ink4); font-size: 12px; }
 
 /* ---- statbar ---- */
 .statbar { display: flex; background: var(--surface); border-radius: var(--r-card); padding: 14px 20px; margin-bottom: 20px; }
-.statbar .st { flex: 1; }
+.statbar .st { flex: 1; background: none; border: 0; padding: 0; font: inherit; text-align: left; cursor: pointer; border-radius: 12px; transition: background 150ms; }
+.statbar .st:hover, .statbar .st:active { background: var(--hover); }
+.statbar .st:focus-visible { outline: 2px solid var(--pri); outline-offset: 2px; }
 .statbar .st + .st { border-left: 1px solid var(--line); padding-left: 20px; }
 .statbar .num { font: bold 18px Georgia, serif; color: var(--pri); }
 .statbar .lbl { color: var(--ink4); font-size: 10px; }
@@ -299,7 +301,7 @@ td .td-none { color: var(--ink4); font-size: 12px; }
   display: flex; width: 100%; text-align: left; background: var(--sky-tint); border-radius: var(--r-card);
   padding: 18px 20px; margin-bottom: 16px; gap: 12px;
 }
-.hero:hover { background: #d8e9f8; }
+.hero:hover { background: var(--sky-tint-hover); }
 .hero-l { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
 .hero-l .label.sec { margin: 0; }
 .hero-t { font: bold 18px Georgia, serif; color: var(--ink); }
