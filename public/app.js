@@ -113,25 +113,30 @@ const mobHead = () => `<div class="mob-head">
 function vLogin() {
   app.innerHTML = `<div class="auth">
     <div class="auth-hero">
-      <div class="logo">${svg('cal', 18)}</div>
+      <div class="logo">${svg('cal', 22)}</div>
       <div class="auth-judul">Agenda Direksi</div>
       <div class="auth-sub">Masuk untuk melihat agenda dan konfirmasi kehadiran</div>
     </div>
     <form data-form="login" class="auth-body">
-      <div class="field"><label class="label">Username</label><input name="username" autocomplete="username" required placeholder="username Anda"></div>
-      <div class="field"><label class="label">Password</label><div class="pwd-wrap"><input id="pwd-login" name="password" type="password" autocomplete="current-password" required placeholder="••••••••"><button type="button" class="pwd-eye" data-eye="pwd-login" aria-label="Lihat password">${svg('eye', 20)}</button></div></div>
+      <div class="field"><label class="label" for="lg-user">Username</label>
+        <div class="in-wrap"><i class="in-ico">${svg('person', 18)}</i><input id="lg-user" class="has-ico" name="username" autocomplete="username" required placeholder="username Anda"></div></div>
+      <div class="field"><label class="label" for="pwd-login">Password</label>
+        <div class="in-wrap pwd-wrap"><i class="in-ico">${svg('key', 18)}</i><input id="pwd-login" class="has-ico" name="password" type="password" autocomplete="current-password" required placeholder="••••••••"><button type="button" class="pwd-eye" data-eye="pwd-login" aria-pressed="false" aria-label="Lihat password">${svg('eye', 20)}</button></div></div>
+      <div class="auth-err" role="alert" hidden></div>
       <button class="btn btn-block">Masuk</button>
     </form></div>`
 }
 function vGantiPassword() {
   app.innerHTML = `<div class="auth">
     <div class="auth-hero">
-      <div class="logo">${svg('key', 18)}</div>
+      <div class="logo">${svg('key', 22)}</div>
       <div class="auth-judul">Ganti Password</div>
       <div class="auth-sub">Password awal = username. Buat password baru untuk lanjut.</div>
     </div>
     <form data-form="ganti-password" class="auth-body">
-      <div class="field"><label class="label">Password baru</label><input name="password" type="password" minlength="6" required placeholder="minimal 6 karakter"></div>
+      <div class="field"><label class="label" for="gp-pass">Password baru</label>
+        <div class="in-wrap pwd-wrap"><i class="in-ico">${svg('key', 18)}</i><input id="gp-pass" class="has-ico" name="password" type="password" minlength="6" autocomplete="new-password" required placeholder="minimal 6 karakter"><button type="button" class="pwd-eye" data-eye="gp-pass" aria-pressed="false" aria-label="Lihat password">${svg('eye', 20)}</button></div></div>
+      <div class="auth-err" role="alert" hidden></div>
       <button class="btn btn-block">Simpan password</button>
     </form></div>`
 }
@@ -587,6 +592,7 @@ document.addEventListener('click', async (e) => {
       const lihat = inp.type === 'password'
       inp.type = lihat ? 'text' : 'password'
       eyeBtn.innerHTML = svg(lihat ? 'eyeOff' : 'eye', 20)
+      eyeBtn.setAttribute('aria-pressed', String(lihat))
     }
   }
   const el = e.target.closest('[data-act]')
@@ -705,6 +711,10 @@ async function submitAgenda(f, kirim) {
   toast(kirim ? 'Agenda terkirim ke peserta' : 'Draft tersimpan')
   location.hash = '#/agenda'
 }
+// inline error + status loading khusus form auth (login / ganti password)
+const setErr = (f, m) => { const b = f.querySelector('.auth-err'); if (!b) return; b.textContent = m; b.hidden = !m }
+const mulai = (f) => { const b = f.querySelector('.btn-block'); if (!b) return; b.dataset.t = b.textContent; b.textContent = 'Memeriksa…'; b.disabled = true }
+const selesai = (f) => { const b = f.querySelector('.btn-block'); if (b && b.dataset.t) { b.textContent = b.dataset.t; b.disabled = false; delete b.dataset.t } }
 document.addEventListener('submit', async (e) => {
   const f = e.target.closest('form[data-form]')
   if (!f) return
@@ -717,10 +727,12 @@ document.addEventListener('submit', async (e) => {
   const kind = f.dataset.form
   try {
     if (kind === 'login') {
+      setErr(f, ''); mulai(f)
       me = await api('/login', { method: 'POST', body: JSON.stringify(Object.fromEntries(new FormData(f))) })
       location.hash = me.must_change ? '#/ganti-password' : '#/'
       setupPush()
     } else if (kind === 'ganti-password') {
+      setErr(f, ''); mulai(f)
       await api('/change-password', { method: 'POST', body: JSON.stringify(Object.fromEntries(new FormData(f))) })
       me.must_change = false
       toast('Password diperbarui'); location.hash = '#/'
@@ -751,7 +763,7 @@ document.addEventListener('submit', async (e) => {
       f.closest('.modal-bg').remove()
       toast('Pengguna diperbarui'); vPengguna()
     }
-  } catch (err) { toast(err.message, true) }
+  } catch (err) { setErr(f, err.message); selesai(f); toast(err.message, true) }
 })
 
 // ---------- push ----------
