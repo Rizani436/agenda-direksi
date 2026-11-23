@@ -204,13 +204,21 @@ async function vDashboard() {
   <div class="label sec">AGENDA TERBARU</div>
   ${list}`}`, 'Dashboard')
 }
+// badge tanggal utk kartu agenda mobile (angka + bulan pendek, sorot hari ini)
+const BULAN = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
+const tglBadge = (t) => {
+  const d = new Date(t + 'T00:00:00')
+  const isToday = t === today()
+  return `<span class="tgl-badge${isToday ? ' today' : ''}" aria-hidden="true"><b>${d.getDate()}</b><i>${isToday ? 'hari ini' : BULAN[d.getMonth()]}</i></span>`
+}
 function rowAgenda(a, compact = false) {
   const pg = a.pemegang || a.terkonfirmasi
   return `<button class="agcard" data-nav="#/agenda/${a.id}">
     <div class="ag-main">
+      ${tglBadge(a.tanggal)}
       <div class="ag-txt">
         <div class="ag-t">${esc(a.judul)}</div>
-        <div class="meta">${fmtD(a.tanggal)} · ${fmtT(a.jam)}${a.lokasi ? ' · ' + esc(a.lokasi) : ''}</div>
+        <div class="meta">${fmtT(a.jam)}${a.lokasi ? ' · ' + esc(a.lokasi) : ''}</div>
         ${!compact && pg ? `<div class="meta">Pemegang: ${esc(pg)}</div>` : ''}
       </div>
       <div class="ag-side">${chipSt(stLabel(a))}<span class="chev">${svg('chevR', 16)}</span></div>
@@ -227,6 +235,7 @@ async function vAgendaList() {
   const items = await api(`/agenda?filter=${listFilter}&q=${encodeURIComponent(listTerm)}`)
   const filterRow = `<div class="filters">
       ${['semua', 'minggu', 'bulan', 'riwayat'].map(f => `<button class="fchip ${listFilter === f ? 'on' : ''}" data-act="filter" data-v="${f}">${{ semua: 'Semua', minggu: 'Minggu ini', bulan: 'Bulan ini', riwayat: 'Riwayat' }[f]}</button>`).join('')}
+      <span class="fcount">${items.length} agenda</span>
       <div class="search">${svg('search', 16)}<input id="q" placeholder="Cari agenda…" value="${esc(listTerm)}"></div>
     </div>`
   if (isDesk()) {
@@ -235,11 +244,11 @@ async function vAgendaList() {
       <button class="btn" data-nav="#/buat">${svg('plus', 16)}Buat Agenda</button></div></div>
     ${filterRow}
     <div class="card tblcard">
-      <table><thead><tr><th class="td-chk"><input type="checkbox" class="sel-all"></th><th>Agenda</th><th>Tanggal</th><th>Pemegang</th><th>Status</th><th></th></tr></thead><tbody>
+      <table><thead><tr><th class="td-chk"><input type="checkbox" class="sel-all" aria-label="Pilih semua agenda"></th><th>Agenda</th><th>Tanggal</th><th>Pemegang</th><th>Status</th><th></th></tr></thead><tbody>
       ${items.map(a => `<tr class="rowlink" data-nav="#/agenda/${a.id}">
-        <td class="td-chk"><input type="checkbox" class="sel-ag" value="${a.id}"></td>
+        <td class="td-chk"><input type="checkbox" class="sel-ag" value="${a.id}" aria-label="Pilih ${esc(a.judul)}"></td>
         <td><div class="td-t">${esc(a.judul)}</div></td>
-        <td class="td-m">${fmtD(a.tanggal)} · ${fmtT(a.jam)}</td>
+        <td class="td-m${a.tanggal === today() ? ' td-tgl-now' : ''}">${fmtD(a.tanggal)} · ${fmtT(a.jam)}</td>
         <td><div class="td-pg">${a.pemegang ? avatarEl(a.pemegang, 'sm') + `<span>${esc(a.pemegang)}</span>`
           : a.terkonfirmasi ? avatarEl(a.terkonfirmasi, 'sm') + `<span>${esc(a.terkonfirmasi)}</span>`
           : '<span class="td-none">Belum ditentukan</span>'}</div></td>
@@ -249,10 +258,16 @@ async function vAgendaList() {
       </tbody></table></div>`, 'Agenda')
     $('#q').addEventListener('input', (e) => { listTerm = e.target.value; clearTimeout(vAgendaList._t); vAgendaList._t = setTimeout(vAgendaList, 300) })
   } else {
+    let lastD = ''
+    const cards = items.map(a => {
+      const g = a.tanggal !== lastD ? `<div class="label sec">${a.tanggal === today() ? 'HARI INI' : fmtD(a.tanggal).toUpperCase()}</div>` : ''
+      lastD = a.tanggal
+      return g + rowAgenda(a)
+    }).join('')
     shell(`${mobHead()}
     <div class="page-head"><h1>Agenda Saya</h1><div class="sub">Agenda yang melibatkan Anda</div></div>
     ${filterRow}
-    ${items.length ? items.map(a => rowAgenda(a)).join('') : emptyState('Belum ada agenda', 'Agenda yang dialihkan ke Anda akan muncul di sini')}`,
+    ${items.length ? cards : emptyState('Belum ada agenda', 'Agenda yang dialihkan ke Anda akan muncul di sini')}`,
       'Agenda')
     const q = $('#q')
     if (q) q.addEventListener('input', (e) => { listTerm = e.target.value; clearTimeout(vAgendaList._t); vAgendaList._t = setTimeout(vAgendaList, 300) })

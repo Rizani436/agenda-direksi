@@ -127,6 +127,7 @@ textarea { resize: vertical; }
 }
 .fchip.on { background: var(--ink); color: #fff; font-weight: bold; }
 .fchip:not(.on):hover { background: var(--hover); }
+.fcount { color: var(--ink4); font-size: 12px; white-space: nowrap; }
 .search { position: relative; margin-left: auto; width: 280px; }
 .search input { padding-left: 36px; height: 32px; padding-top: 0; padding-bottom: 0; background: var(--surface); border-radius: 16px; font-size: 12px; }
 .search svg { position: absolute; left: 12px; top: 8px; width: 16px; height: 16px; fill: var(--ink4); }
@@ -265,13 +266,25 @@ td .td-none { color: var(--ink4); font-size: 12px; }
 /* ---- kartu agenda ---- */
 .agcard {
   display: block; width: 100%; text-align: left; background: var(--surface); border-radius: var(--r-card);
-  padding: 16px 20px; margin-bottom: 12px; min-height: 72px;
+  padding: 14px 16px; margin-bottom: 12px; min-height: 72px;
+  transition: background 150ms;
 }
-.agcard:hover { background: var(--hover); }
+.agcard:hover, .agcard:active { background: var(--hover); }
 .ag-main { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-.ag-t { font-weight: bold; font-size: 12px; }
+.ag-main .ag-txt { flex: 1; min-width: 0; }
+.ag-t { font-weight: bold; font-size: 13px; color: var(--ink); }
 .agcard .meta { color: var(--ink4); font-size: 11px; margin-top: 4px; }
 .ag-side { display: flex; align-items: center; gap: 10px; flex: none; }
+/* badge tanggal (kartu agenda) */
+.tgl-badge {
+  display: inline-flex; flex-direction: column; align-items: center; justify-content: center; flex: none;
+  width: 44px; height: 48px; border-radius: 12px; background: var(--ground); border: 1px solid var(--line); line-height: 1.15;
+}
+.tgl-badge b { font-size: 16px; color: var(--ink); }
+.tgl-badge i { font-style: normal; font-size: 9px; text-transform: uppercase; letter-spacing: .05em; color: var(--ink4); }
+.tgl-badge.today { background: var(--pri); border-color: var(--pri); }
+.tgl-badge.today b, .tgl-badge.today i { color: #fff; }
+.td-tgl-now { color: var(--pri) !important; font-weight: bold; }
 .ag-side .chip { height: 24px; border-radius: 12px; }
 .chev svg { fill: var(--ink4); }
 
